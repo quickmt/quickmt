@@ -146,7 +146,7 @@ def clean_input(
                 return "\t".join([s_clean, detok.detokenize([t_clean])]) + "\n"
 
 
-def main(
+def clean(
     src_lang: str,
     tgt_lang: str,
     src_min_langid_score: float = 0.5,
@@ -183,5 +183,9 @@ def main(
             sys.stdout.write(cleaned_input)
 
 
+def main():
+    Fire(clean)
+
+
 if __name__ == "__main__":
-    Fire(main)
+    main()

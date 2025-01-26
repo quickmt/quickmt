@@ -11,7 +11,7 @@ def data_generator(src_in: str, src_lang: str, tgt_in: str, tgt_lang):
                 yield {src_lang: s.strip(), tgt_lang: t.strip(), "sco": 1.0}
 
 
-def main(dataset_key, src_in: str, tgt_in: str, src_lang: str, tgt_lang: str):
+def corpus_to_hf(dataset_key, src_in: str, tgt_in: str, src_lang: str, tgt_lang: str):
     """Upload mt corpus to huggingface"""
     dataset = Dataset.from_generator(
         data_generator,
@@ -26,5 +26,9 @@ def main(dataset_key, src_in: str, tgt_in: str, src_lang: str, tgt_lang: str):
     dataset.push_to_hub(dataset_key)
 
 
+def main():
+    Fire(corpus_to_hf)
+
+
 if __name__ == "__main__":
-    Fire(main)
+    main()

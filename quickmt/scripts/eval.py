@@ -11,9 +11,9 @@ bleu = BLEU()
 chrf = CHRF()
 
 
-def main(model_path: str, src_lang: str, tgt_lang: str, num_threads: int = 6, compute_type = "auto", device: str = "cpu"):
+def eval(model_path: str, src_lang: str, tgt_lang: str, num_threads: int = 6, compute_type="auto", device: str = "cpu"):
     model_path = Path(model_path)
-    
+
     print("Loading flores-devtest data")
     try:
         flores = datasets.load_dataset(
@@ -73,5 +73,9 @@ def main(model_path: str, src_lang: str, tgt_lang: str, num_threads: int = 6, co
     print(chrf.corpus_score(mt, [ref]))
 
 
+def main():
+    Fire(eval)
+
+
 if __name__ == "__main__":
-    Fire(main)
+    main()

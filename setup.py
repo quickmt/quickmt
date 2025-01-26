@@ -18,7 +18,7 @@ setup(
     },
     python_requires=">=3.10",
     install_requires=[
-        #"eole>=0.1.0",
+        # "eole>=0.1.0",
         "ctranslate2>=4,<5",
         "sentencepiece",
         "fasttext-wheel",
@@ -28,7 +28,13 @@ setup(
         "bifixer",
         "fasttext-wheel",
         "mtdata",
-        "nltk"
-    ]
+        "nltk",
+    ],
+    entry_points={
+        "console_scripts": [
+            "quickmt-clean=quickmt.scripts.clean:main",
+            "quickmt-eval=quickmt.scripts.eval:main",
+            "quickmt-upload-hf=quickmt.scripts.corpus_to_hf:main",
+        ],
+    },
 )
-
