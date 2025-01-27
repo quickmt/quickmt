@@ -1,3 +1,5 @@
 quickmt.egg-info/
 quickmt/__pycache__
 quickmt/scripts/__pycache__
+.ipynb_checkpoints/
+quickmt/scripts/.ipynb_checkpoints/

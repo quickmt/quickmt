@@ -24,11 +24,12 @@ setup(
         "fasttext-wheel",
         "blingfire",
         "fire",
-        "bicleaner-hardrules",
+        #"bicleaner-hardrules",
         "bifixer",
         "fasttext-wheel",
         "mtdata",
         "nltk",
+        "pydantic>2"
     ],
     entry_points={
         "console_scripts": [
