@@ -17,47 +17,56 @@ class Translator:
 
     @staticmethod
     @validate_call
-    def sentence_split(src: List[str]):
+    def _sentence_split(src: List[str]):
         """Split sentences with Blingfire
 
         Args:
             src (List[str]): Input list of strings to split by sentences
 
         Returns:
-            List[Tuple[int, str]]: List of tuples, first element is the input index, second element is the sentence
+            List[List[int, str]]: List of tuples, first element is the input index, second element is the sentence
         """
         ret = []
         for idx, i in enumerate(src):
-            for j in i.splitlines(keepends=True):
+            for paragraph, j in enumerate(i.splitlines(keepends=True)):
                 sents = text_to_sentences(j).splitlines()
                 for sent in sents:
                     stripped_sent = sent.strip()
-                    if len(stripped_sent)>0:
+                    if len(stripped_sent) > 0:
                         # If the next segment is just a few chars, just tack it on
-                        if len(stripped_sent) < 5:
-                            ret[-1][1] += stripped_sent
+                        if (len(ret) > 0 and idx == ret[-1][0]) and (len(stripped_sent) < 5):
+                            ret[-1][2] += stripped_sent
                         else:
-                            ret.append([idx, stripped_sent])
+                            ret.append([idx, paragraph, stripped_sent])
         return ret
 
     @staticmethod
     @validate_call
-    def sentence_join(src: List[Tuple[int, str]], sent_join_str: str = " "):
+    def _sentence_join(src: List[Tuple[int, int, str]], paragraph_join_str: str = "\n", sent_join_str: str = " "):
         """Join sentences together
 
         Args:
-            src (List[int, str]): Input list of indices and strings to join back up
+            src (List[int, int,  str]): Input list of indices and strings to join back up
 
         Returns:
             List[str]: List of strings, joined by join key
         """
-        ret = ["" for _ in range(1 + max([i[0] for i in src]))]
-        for idx, i in src:
-            ret[idx] += sent_join_str + i
-        return [i.strip() for i in ret]
+        ret = list(["" for _ in range(1 + max([i[0] for i in src]))])
+        last_paragraph = 0
+        for idx, paragraph, text in src:
+            if len(ret[idx]) > 0:
+                if paragraph == last_paragraph:
+                    ret[idx] += sent_join_str + text
+                else:
+                    ret[idx] += paragraph_join_str + text
+                last_paragraph = paragraph
+            else:
+                ret[idx] = text
+                last_paragraph = paragraph
+        return ret
 
     @validate_call
-    def __call__(self, src: List[str], max_batch_size: int = 32, beam_size: int = 5, patience: int = 1):
+    def __call__(self, src: List[str], max_batch_size: int = 32, beam_size: int = 4, patience: int = 1):
         """Translate a list of strings with quickmt model
 
         Args:
@@ -69,9 +78,9 @@ class Translator:
         Returns:
             List[str]: Translation of the input
         """
-        sentences = self.sentence_split(src)
+        sentences = self._sentence_split(src)
 
-        input_tokens = self.source_tokenizer.encode([i[1] for i in sentences], out_type=str)
+        input_tokens = self.source_tokenizer.encode([i[2] for i in sentences], out_type=str)
 
         t1 = time()
         results = self.translator.translate_batch(
@@ -88,6 +97,12 @@ class Translator:
 
         translated_sents = [self.target_tokenizer.decode(i) for i in output_tokens]
 
-        return self.sentence_join(
-            (idx, translation) for idx, translation in zip([i[0] for i in sentences], translated_sents)
+        indices = [i[0] for i in sentences]
+        paragraphs = [i[1] for i in sentences]
+
+        return self._sentence_join(
+            (
+                (idx, paragraph, translation)
+                for idx, paragraph, translation in zip(indices, paragraphs, translated_sents)
+            )
         )
