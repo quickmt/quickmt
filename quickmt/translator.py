@@ -10,6 +10,12 @@ from pydantic import DirectoryPath, validate_call
 
 class Translator:
     def __init__(self, model_path: DirectoryPath, **args):
+        """Create quickmt translation object
+
+        Args:
+            model_path (DirectoryPath): Path to quickmt model folder
+            **args: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
+        """
         self.model_path = Path(model_path)
         self.translator = ctranslate2.Translator(model_path, **args)
         self.source_tokenizer = sentencepiece.SentencePieceProcessor(str(self.model_path / "src.spm.model"))
@@ -66,7 +72,7 @@ class Translator:
         return ret
 
     @validate_call
-    def __call__(self, src: List[str], max_batch_size: int = 32, beam_size: int = 4, patience: int = 1):
+    def __call__(self, src: List[str], max_batch_size: int = 32, beam_size: int = 4, patience: int = 1, **args):
         """Translate a list of strings with quickmt model
 
         Args:
@@ -74,6 +80,7 @@ class Translator:
             max_batch_size (int, optional): Maximum batch size, to constrain RAM utilization. Defaults to 32.
             beam_size (int, optional): CTranslate2 Beam size. Defaults to 5.
             patience (int, optional): CTranslate2 Patience. Defaults to 1.
+            **args: Other CTranslate2 translate_batch args, see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html#ctranslate2.Translator.translate_batch
 
         Returns:
             List[str]: Translation of the input
@@ -89,6 +96,7 @@ class Translator:
             patience=patience,
             max_decoding_length=512,
             max_batch_size=max_batch_size,
+            **args
         )
         t2 = time()
         print(f"Translation time: {t2-t1}")
