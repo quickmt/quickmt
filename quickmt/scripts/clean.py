@@ -157,6 +157,8 @@ def clean(
     ft_model_path: str = "../lid.176.bin",
 ):
     """Remove non-printable characters and filter out if char length ratio > 4"""
+    # https://stackoverflow.com/questions/66353366/cant-suppress-fasttext-warning-load-model-does-not-return
+    fasttext.FastText.eprint = lambda x: None
     ft = fasttext.load_model(ft_model_path)
 
     for line in sys.stdin:

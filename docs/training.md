@@ -56,29 +56,16 @@ mv train.eng train.tgt
 
 ### Clean Data a Bit
 
-```{bash}
-# Deduplicate 
-# Will use /tmp, so make sure your disk is bit if your corpus is big
+```bash
+# Deduplicate, clean and filter
+# Will use /tmp, so make sure your disk is big if your corpus is big
 # Or set the TMPDIR env var to somewhere with a lot of space
-paste -d '\t' train.src train.tgt \
+export TMPDIR=/tmp/
+time paste -d '\t' train.src train.tgt \
     | sort | uniq  \
-    | awk -v FS="\t" '{ print $1 > "train.uniq.src" ; print $2 > "train.uniq.tgt" }'
-
-# Clean
-paste -d '\t' train.uniq.src train.uniq.tgt | parallel -j 6 --pipe -k -l 100000  python -m quickmt.clean --src_lang so --tgt_lang en --src_min_langid_score 0 --tgt_min_langid_score 0.5 \
-    | awk -v FS="\t" '{ print $1 > "train.clean.src" ; print $2 > "train.clean.tgt" }'
-
-# Fix
-time paste -d '\t' train.clean.src train.clean.tgt \
-    | parallel -j 6 --pipe -k -l 100000 bifixer --scol 1 --tcol 2 --ignore_duplicates --ignore_segmentation  --tmp_dir  /media/mark/nvme2022/tmp -q - - so en  \
-    | awk -v FS="\t" '{ print $1 > "train.fixed.src" ; print $2 > "train.fixed.tgt" }'
-
-# Shuffle - https://www.baeldung.com/linux/randomize-file-lines
-paste -d '\t' train.fixed.src train.fixed.tgt | \
-    awk 'BEGIN{srand()}{print rand(), $0}' \
-    | sort -n -k 1 \
-    | awk 'sub(/\S* /,"")' \
-    | awk -v FS="\t" '{ print $1 > "train.shuf.src" ; print $2 > "train.shuf.tgt" }'
+    | parallel --block 30M -j 12 --pipe -k -l 100000 quickmt-clean --src_lang so --tgt_lang en --ft_model_path ./lid.176.bin --src_min_langid_score 0 --tgt_min_langid_score 0.5 \
+    | awk 'BEGIN{srand()}{print rand(), $0}' | sort -n -k 1 | awk 'sub(/\S* /,"")' \
+    | awk -v FS="\t" '{ print $1 > "train.cleaned.src" ; print $2 > "train.cleaned.tgt" }'
 ```
 
 ### Upload Data to Huggingface
@@ -86,18 +73,18 @@ paste -d '\t' train.fixed.src train.fixed.tgt | \
 You will have to have authenticated to huggingface and you will need to write to a location for which you have permissions (replace `quickmt/quickmt-train.so-en` with `your_username/your_dataset_name`)
 
 ```
-python -m quickmt.corpus_to_hf quickmt/quickmt-train.so-en --src_in train.shuf.src --tgt_in train.shuf.tgt --src_lang so --tgt_lang en
-python -m quickmt.corpus_to_hf quickmt/quickmt-valid.so-en --src_in dev.src --tgt_in dev.tgt --src_lang so --tgt_lang en
+quickmt-upload-hf quickmt/quickmt-train.so-en --src_in train.cleaned.src --tgt_in train.cleaned.tgt --src_lang so --tgt_lang en
+quickmt-upload-hf quickmt/quickmt-valid.so-en --src_in dev.src --tgt_in dev.tgt --src_lang so --tgt_lang en
 ```
 
 ### Train Tokenizers
 
 ```bash
 # Train target tokenizer
-spm_train --input_sentence_size 5000000 --shuffle_input_sentence false --input=train.shuf.tgt --num_threads 12 --model_prefix=tgt.spm --vocab_size=20000 --character_coverage=0.9995 --model_type=unigram
+spm_train --input_sentence_size 5000000 --shuffle_input_sentence false --input=train.cleaned.tgt --num_threads 12 --model_prefix=tgt.spm --vocab_size=20000 --character_coverage=0.9995 --model_type=unigram
 
 # Train source tokenizer
-spm_train --input_sentence_size 5000000 --shuffle_input_sentence false --input=train.shuf.src --num_threads 12 --model_prefix=src.spm --vocab_size=20000 --character_coverage=0.9995 --model_type=unigram
+spm_train --input_sentence_size 5000000 --shuffle_input_sentence false --input=train.cleaned.src --num_threads 12 --model_prefix=src.spm --vocab_size=20000 --character_coverage=0.9995 --model_type=unigram
 
 # Convert spm vocab to eole vocab
 cat tgt.spm.vocab | eole tools spm_to_vocab > tgt.eole.vocab
@@ -133,7 +120,5 @@ cp tgt.spm.model ct2-soen/
 Evaluates on the `flores-devtest` dataset
 
 ```bash
-python -m quickmt.eval --model_path ct2-soen --src_lang som_Latn --tgt_lang eng_Latn
+quickmt-eval --model_path ct2-soen --src_lang som_Latn --tgt_lang eng_Latn
 ```
-
-
