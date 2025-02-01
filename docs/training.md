@@ -113,11 +113,14 @@ python -m ctranslate2.converters.eole_ct2 --model_path ./model --output_dir ./ct
 # Copy over src and tgt tokenizers
 cp src.spm.model ct2-soen/
 cp tgt.spm.model ct2-soen/
+
+# Copy over the config too
+cp eole-config-small.yaml ct2-soen/eole-config.yaml
 ```
 
 ### Evaluate
 
-Evaluates on the `flores-devtest` dataset
+Evaluate on the `flores-devtest` dataset
 
 ```bash
 quickmt-eval --model_path ct2-soen --src_lang som_Latn --tgt_lang eng_Latn
