@@ -17,8 +17,8 @@ setup(
         "Source": "https://github.com/quickmt/quickmt",
     },
     python_requires=">=3.10",
-    install_requires=["ctranslate2>=4,<5", "sentencepiece", "blingfire", "fire", "nltk", "pydantic>2"],
-    extras_require={"dev": ["eole>=0.1.0", "bifixer", "fasttext-wheel", "mtdata"]},
+    install_requires=["ctranslate2>=4,<5", "sentencepiece", "blingfire", "fire", "pydantic>2", "huggingface_hub", "datasets", "sacrebleu"],
+    extras_require={"dev": ["eole>=0.1.0", "bifixer", "fasttext-wheel", "mtdata", "nltk"]},
     entry_points={
         "console_scripts": [
             "quickmt-clean=quickmt.scripts.clean:main",
