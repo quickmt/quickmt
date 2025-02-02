@@ -2,12 +2,13 @@ from time import time
 
 import datasets
 from fire import Fire
-from sacrebleu import BLEU, CHRF
+from sacrebleu import BLEU, CHRF, TER
 
 from ..translator import Translator
 
 bleu = BLEU()
 chrf = CHRF()
+ter = TER()
 
 
 def eval(
@@ -20,7 +21,8 @@ def eval(
     device: str = "cpu",
     max_batch_size: int = 32,
     max_decoding_length: int = 512,
-    **kwargs
+    output_file: str = None,
+    **kwargs,
 ):
     t = Translator(
         model_path=model_path,
@@ -54,11 +56,18 @@ def eval(
     t2 = time()
     print(f"Translation time: {t2-t1}")
 
-    print("Source sample: ", src[:5])
-    print("Reference sample: ", ref[:5])
-    print("Translation sample: ", mt[:5])
+    # Write results to file, for COMET scoring
+    if output_file:
+        with open(output_file, "wt") as myfile:
+            myfile.write("".join([i.replace("\n", "\t") + "\n" for i in mt]))
+
+    print("Source sample: ", src[:10])
+    print("Reference sample: ", ref[:10])
+    print("Translation sample: ", mt[:10])
+
     print(bleu.corpus_score(mt, [ref]))
     print(chrf.corpus_score(mt, [ref]))
+    print(ter.corpus_score(mt, [ref]))
 
 
 def main():

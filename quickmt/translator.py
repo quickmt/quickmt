@@ -134,3 +134,25 @@ class Translator:
             return ret[0]
         else:
             return ret
+
+    @validate_call
+    def translate_file(self, input_file: str, output_file: str, **kwargs) -> None:
+        """Translate a file with a quickmt model 
+
+        Args:
+            file_path (str): Path to plain-text file to translate
+        """
+        with open(input_file, "rt") as myfile:
+            src = myfile.readlines()
+        
+        # Remove newlines
+        src = [i.strip() for i in src]
+        
+        # Translate
+        mt = self(src, **kwargs)
+        
+        # Replace newlines to ensure output is the same number of lines
+        mt = [i.replace("\n", "\t") for i in mt]
+
+        with open(output_file, "wt") as myfile:
+            myfile.write("".join([i+"\n" for i in mt]))
