@@ -81,10 +81,14 @@ quickmt-upload-hf quickmt/quickmt-valid.so-en --src_in dev.src --tgt_in dev.tgt 
 
 ```bash
 # Train target tokenizer
-spm_train --input_sentence_size 5000000 --shuffle_input_sentence false --input=train.cleaned.tgt --num_threads 12 --model_prefix=tgt.spm --vocab_size=20000 --character_coverage=0.9995 --model_type=unigram
+spm_train --input_sentence_size 10000000 --shuffle_input_sentence false \
+    --input=train.cleaned.tgt --num_threads 16 --model_prefix=tgt.spm \
+    --vocab_size=32000 --character_coverage=0.9999 --model_type=unigram
 
 # Train source tokenizer
-spm_train --input_sentence_size 5000000 --shuffle_input_sentence false --input=train.cleaned.src --num_threads 12 --model_prefix=src.spm --vocab_size=20000 --character_coverage=0.9995 --model_type=unigram
+spm_train --input_sentence_size 10000000 --shuffle_input_sentence false \
+    --input=train.cleaned.src --num_threads 16 --model_prefix=src.spm \
+    --vocab_size=32000 --character_coverage=0.9999 --model_type=unigram
 
 # Convert spm vocab to eole vocab
 cat tgt.spm.vocab | eole tools spm_to_vocab > tgt.eole.vocab

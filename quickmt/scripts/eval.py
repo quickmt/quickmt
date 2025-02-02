@@ -19,6 +19,8 @@ def eval(
     compute_type="auto",
     device: str = "cpu",
     max_batch_size: int = 32,
+    max_decoding_length: int = 512,
+    **kwargs
 ):
     t = Translator(
         model_path=model_path,
@@ -48,12 +50,13 @@ def eval(
 
     print("Translating")
     t1 = time()
-    mt = t(src, max_batch_size=max_batch_size)
+    mt = t(src, max_batch_size=max_batch_size, max_decoding_length=max_decoding_length, **kwargs)
     t2 = time()
     print(f"Translation time: {t2-t1}")
-    
-    print(src[:5])
-    print(mt[:5])
+
+    print("Source sample: ", src[:5])
+    print("Reference sample: ", ref[:5])
+    print("Translation sample: ", mt[:5])
     print(bleu.corpus_score(mt, [ref]))
     print(chrf.corpus_score(mt, [ref]))
 

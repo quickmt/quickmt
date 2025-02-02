@@ -1,6 +1,6 @@
 from pathlib import Path
 from time import time
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import ctranslate2
 import sentencepiece
@@ -72,7 +72,15 @@ class Translator:
         return ret
 
     @validate_call
-    def __call__(self, src: List[str], max_batch_size: int = 32, beam_size: int = 4, patience: int = 1, **args):
+    def __call__(
+        self,
+        src: Union[str, List[str]],
+        max_batch_size: int = 32,
+        max_decoding_length: int = 512,
+        beam_size: int = 4,
+        patience: int = 1,
+        **args,
+    ) -> Union[str, List[str]]:
         """Translate a list of strings with quickmt model
 
         Args:
@@ -80,11 +88,18 @@ class Translator:
             max_batch_size (int, optional): Maximum batch size, to constrain RAM utilization. Defaults to 32.
             beam_size (int, optional): CTranslate2 Beam size. Defaults to 5.
             patience (int, optional): CTranslate2 Patience. Defaults to 1.
+            max_decoding_length (int, optional): Maximum length of translation
             **args: Other CTranslate2 translate_batch args, see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html#ctranslate2.Translator.translate_batch
 
         Returns:
-            List[str]: Translation of the input
+            Union[str, List[str]]: Translation of the input
         """
+        if isinstance(src, str):
+            return_string = True
+            src = [src]
+        else:
+            return_string = False
+
         sentences = self._sentence_split(src)
 
         input_tokens = self.source_tokenizer.encode([i[2] for i in sentences], out_type=str)
@@ -94,9 +109,9 @@ class Translator:
             input_tokens,
             beam_size=beam_size,
             patience=patience,
-            max_decoding_length=512,
+            max_decoding_length=max_decoding_length,
             max_batch_size=max_batch_size,
-            **args
+            **args,
         )
         t2 = time()
         print(f"Translation time: {t2-t1}")
@@ -108,9 +123,14 @@ class Translator:
         indices = [i[0] for i in sentences]
         paragraphs = [i[1] for i in sentences]
 
-        return self._sentence_join(
+        ret = self._sentence_join(
             (
                 (idx, paragraph, translation)
                 for idx, paragraph, translation in zip(indices, paragraphs, translated_sents)
             )
         )
+
+        if return_string:
+            return ret[0]
+        else:
+            return ret
