@@ -23,6 +23,22 @@ def main(
     max_batch_size: int = 32,
     max_decoding_length: int = 512,
 ):
+    """Evaluate ctranslate2 exported m2m100 model
+
+    Must export model to ctranslate2 format first.
+
+    Args:
+        output_file (str): Path to store MT output
+        src_lang (str): Input language in iso 639-2 format
+        tgt_lang (str): Output language in iso 639-2 format
+        src_lang_flores (str): Input langauge in flores format
+        tgt_lang_flores (str): Output language in flores format
+        ct2_model_path (str): Path to ctranslate2 format version of m2m100
+        device (str, optional): Compute device. cpu or cuda. Defaults to "cuda".
+        beam_size (int, optional): Beam size. Defaults to 5.
+        max_batch_size (int, optional): Max batch size. Increase for faster speed. Decrease if you run out of memory. Defaults to 32.
+        max_decoding_length (int, optional): Max decoding length. Defaults to 512.
+    """
     try:
         flores = datasets.load_dataset(
             "facebook/flores",
