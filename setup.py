@@ -23,6 +23,7 @@ setup(
         "console_scripts": [
             "quickmt-clean=quickmt.scripts.clean:main",
             "quickmt-eval=quickmt.scripts.eval:main",
+            "quickmt-list=quickmt.hub:list",
             "quickmt-model-download=quickmt.hub:download",
             "quickmt-model-upload=quickmt.hub:upload",
             "quickmt-corpus-upload=quickmt.scripts.corpus_to_hf:main",

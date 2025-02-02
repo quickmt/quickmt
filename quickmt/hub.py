@@ -6,6 +6,17 @@ from fire import Fire
 from huggingface_hub import HfApi
 
 
+def hf_list():
+    """List quickmt models available on Huggingface
+
+    Returns:
+        None
+    """
+    api = HfApi()
+    models = api.list_models(author="quickmt")
+    return [i.id for i in models]
+
+
 def hf_upload(
     repo_id: str,
     input_dir: str,
@@ -69,7 +80,7 @@ def hf_download(
         "source_vocabulary.json",
         "src.spm.model",
         "target_vocabulary.json",
-        "tgt.spm.model"
+        "tgt.spm.model",
     ]
 
     return huggingface_hub.snapshot_download(
@@ -85,5 +96,9 @@ def upload():
     Fire(hf_upload)
 
 
+def list():
+    Fire(hf_list)
+
+
 if __name__ == "__main__":
-    Fire({"download": hf_download, "upload": hf_upload})
+    Fire({"download": hf_download, "upload": hf_upload, "list": hf_list})
