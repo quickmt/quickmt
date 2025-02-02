@@ -15,14 +15,14 @@ def eval(
     model_path: str,
     src_lang: str,
     tgt_lang: str,
+    output_file: str,
+    beam_size: int = 5,
     intra_threads: int = 1,
     inter_threads: int = 6,
     compute_type="auto",
     device: str = "cpu",
     max_batch_size: int = 32,
     max_decoding_length: int = 512,
-    output_file: str = None,
-    **kwargs,
 ):
     t = Translator(
         model_path=model_path,
@@ -52,7 +52,7 @@ def eval(
 
     print("Translating")
     t1 = time()
-    mt = t(src, max_batch_size=max_batch_size, max_decoding_length=max_decoding_length, **kwargs)
+    mt = t(src, max_batch_size=max_batch_size, max_decoding_length=max_decoding_length, beam_size=beam_size)
     t2 = time()
     print(f"Translation time: {t2-t1}")
 
