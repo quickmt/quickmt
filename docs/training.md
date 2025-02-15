@@ -65,7 +65,7 @@ mv train.eng train.tgt
 export TMPDIR=/tmp/
 time paste -d '\t' train.src train.tgt \
     | sort | uniq  \
-    | parallel --block 30M -j 12 --pipe -k -l 100000 quickmt-clean --src_lang so --tgt_lang en --ft_model_path /media/mark/nvme2022/mt/lid.176.bin --length_ratio 4 --src_min_langid_score 0 --tgt_min_langid_score 0.5 \
+    | parallel --block 30M -j 12 --pipe -k -l 100000 quickmt-clean --src_lang so --tgt_lang en --ft_model_path ./lid.176.bin --length_ratio 4 --src_min_langid_score 0 --tgt_min_langid_score 0.5 \
     | awk 'BEGIN{srand()}{print rand(), $0}' | sort -n -k 1 | awk 'sub(/\S* /,"")' \
     | awk -v FS="\t" '{ print $1 > "train.cleaned.src" ; print $2 > "train.cleaned.tgt" }'
 ```
