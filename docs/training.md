@@ -25,12 +25,14 @@ pip install -e ./python/
 pip install --config-settings="--build-option=--max_order=7" https://github.com/kpu/kenlm/archive/master.zip
 
 # Install quickmt
-python -m pip install -e ./
+git clone https://github.com/quickmt/quickmt.git
+python -m pip install -e ./quickmt/"[dev]"
 ```
 
 ### Download Data
 
 ```bash
+# Optionally move .mtdata to a large disk
 mv $HOME/.mtdata /path/to/large/disk
 ln -s /path/to/large/disk $HOME/.mtdata
 
@@ -63,7 +65,7 @@ mv train.eng train.tgt
 export TMPDIR=/tmp/
 time paste -d '\t' train.src train.tgt \
     | sort | uniq  \
-    | parallel --block 30M -j 12 --pipe -k -l 100000 quickmt-clean --src_lang so --tgt_lang en --ft_model_path ./lid.176.bin --src_min_langid_score 0 --tgt_min_langid_score 0.5 \
+    | parallel --block 30M -j 12 --pipe -k -l 100000 quickmt-clean --src_lang so --tgt_lang en --ft_model_path /media/mark/nvme2022/mt/lid.176.bin --length_ratio 4 --src_min_langid_score 0 --tgt_min_langid_score 0.5 \
     | awk 'BEGIN{srand()}{print rand(), $0}' | sort -n -k 1 | awk 'sub(/\S* /,"")' \
     | awk -v FS="\t" '{ print $1 > "train.cleaned.src" ; print $2 > "train.cleaned.tgt" }'
 ```
@@ -83,12 +85,12 @@ quickmt-upload-hf quickmt/quickmt-valid.so-en --src_in dev.src --tgt_in dev.tgt 
 # Train target tokenizer
 spm_train --input_sentence_size 10000000 --shuffle_input_sentence false \
     --input=train.cleaned.tgt --num_threads 16 --model_prefix=tgt.spm \
-    --vocab_size=32000 --character_coverage=0.9999 --model_type=unigram
+    --vocab_size=8000 --character_coverage=0.9995 --model_type=unigram
 
 # Train source tokenizer
 spm_train --input_sentence_size 10000000 --shuffle_input_sentence false \
     --input=train.cleaned.src --num_threads 16 --model_prefix=src.spm \
-    --vocab_size=32000 --character_coverage=0.9999 --model_type=unigram
+    --vocab_size=8000 --character_coverage=0.9995 --model_type=unigram
 
 # Convert spm vocab to eole vocab
 cat tgt.spm.vocab | eole tools spm_to_vocab > tgt.eole.vocab
@@ -124,8 +126,21 @@ cp eole-config-small.yaml ct2-soen/eole-config.yaml
 
 ### Evaluate
 
-Evaluate on the `flores-devtest` dataset
+Evaluate model on the `flores-devtest` dataset
 
 ```bash
-quickmt-eval --model_path ct2-soen --src_lang som_Latn --tgt_lang eng_Latn
+quickmt-eval --model_path ct2-soen --src_lang som_Latn --tgt_lang eng_Latn --output_file mt.txt
+
+# Evaluate with comet, too
+comet-score -s flores.som_Latn -r flores.eng_Latn -t mt.txt 
 ```
+
+
+### Upload to Huggingface
+
+```
+huggingface-cli login
+quickmt-model-upload quickmt/quickmt-so-en ./ct2-soen
+```
+
+

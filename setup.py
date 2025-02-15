@@ -18,7 +18,7 @@ setup(
     },
     python_requires=">=3.10",
     install_requires=["ctranslate2>=4,<5", "sentencepiece", "blingfire", "fire", "pydantic>2", "huggingface_hub", "datasets", "sacrebleu"],
-    extras_require={"dev": ["eole>=0.1.0", "bifixer", "fasttext-wheel", "mtdata", "nltk"]},
+    extras_require={"dev": ["eole>=0.1.0", "bifixer", "fasttext-wheel", "mtdata", "nltk", "sacremoses"]},
     entry_points={
         "console_scripts": [
             "quickmt-clean=quickmt.scripts.clean:main",
@@ -27,6 +27,7 @@ setup(
             "quickmt-model-download=quickmt.hub:download",
             "quickmt-model-upload=quickmt.hub:upload",
             "quickmt-corpus-upload=quickmt.scripts.corpus_to_hf:main",
+            "quickmt-translate-file=quickmt.scripts.translate_file:main",
         ],
     },
 )
