@@ -94,6 +94,9 @@ def char_length_match(
     """Ensure src/tgt within char length bounds and remove if identical src/tgt"""
     slen = len(s_clean)
     tlen = len(t_clean)
+    if slen == 0 or tlen == 0:
+        return False
+
     len_ratio = slen / tlen
     if (slen < min_char_length) or (tlen < min_char_length):
         return False
@@ -103,6 +106,7 @@ def char_length_match(
         return False
     if s_clean == t_clean:
         return False
+
     return True
 
 
@@ -169,20 +173,23 @@ def clean(
         src_in = fields[-2].strip()
         tgt_in = fields[-1].strip()
 
-        cleaned_input = clean_input(
-            src_in,
-            tgt_in,
-            src_lang,
-            tgt_lang,
-            ft,
-            src_min_langid_score,
-            tgt_min_langid_score,
-            length_ratio,
-            min_char_length,
-            max_char_length,
-        )
-        if cleaned_input:
-            sys.stdout.write(cleaned_input)
+        try:
+            cleaned_input = clean_input(
+                src_in,
+                tgt_in,
+                src_lang,
+                tgt_lang,
+                ft,
+                src_min_langid_score,
+                tgt_min_langid_score,
+                length_ratio,
+                min_char_length,
+                max_char_length,
+            )
+            if cleaned_input:
+                sys.stdout.write(cleaned_input)
+        except:
+            pass
 
 
 def main():
