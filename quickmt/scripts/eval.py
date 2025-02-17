@@ -20,7 +20,7 @@ def eval(
     intra_threads: int = 1,
     inter_threads: int = 6,
     compute_type="auto",
-    device: str = "cpu",
+    device: str = "auto",
     max_batch_size: int = 32,
     max_decoding_length: int = 512,
 ):

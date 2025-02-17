@@ -1,6 +1,7 @@
+from abc import ABC, abstractmethod
 from pathlib import Path
 from time import time
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import ctranslate2
 import sentencepiece
@@ -8,18 +9,16 @@ from blingfire import text_to_sentences
 from pydantic import DirectoryPath, validate_call
 
 
-class Translator:
-    def __init__(self, model_path: DirectoryPath, **args):
+class TranslatorABC(ABC):
+    def __init__(self, model_path: DirectoryPath, **kwargs):
         """Create quickmt translation object
 
         Args:
             model_path (DirectoryPath): Path to quickmt model folder
-            **args: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
+            **kwargs: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
         """
         self.model_path = Path(model_path)
-        self.translator = ctranslate2.Translator(model_path, **args)
-        self.source_tokenizer = sentencepiece.SentencePieceProcessor(str(self.model_path / "src.spm.model"))
-        self.target_tokenizer = sentencepiece.SentencePieceProcessor(str(self.model_path / "tgt.spm.model"))
+        self.translator = ctranslate2.Translator(model_path, **kwargs)
 
     @staticmethod
     @validate_call
@@ -71,15 +70,31 @@ class Translator:
                 last_paragraph = paragraph
         return ret
 
+    @abstractmethod
+    def tokenize(self, sentences: List[str], src_lang: Optional[str] = None, tgt_lang: Optional[str] = None):
+        pass
+
+    @abstractmethod
+    def detokenize(self, sentences: List[List[str]], src_lang: Optional[str] = None, tgt_lang: Optional[str] = None):
+        pass
+
+    @abstractmethod
+    def translate_batch(
+        self, sentences: List[List[str]], src_lang: Optional[str] = None, tgt_lang: Optional[str] = None
+    ):
+        pass
+
     @validate_call
     def __call__(
         self,
         src: Union[str, List[str]],
         max_batch_size: int = 32,
         max_decoding_length: int = 512,
-        beam_size: int = 4,
+        beam_size: int = 5,
         patience: int = 1,
-        **args,
+        src_lang: Union[None, str] = None,
+        tgt_lang: Union[None, str] = None,
+        **kwargs,
     ) -> Union[str, List[str]]:
         """Translate a list of strings with quickmt model
 
@@ -102,23 +117,25 @@ class Translator:
 
         sentences = self._sentence_split(src)
 
-        input_tokens = self.source_tokenizer.encode([i[2] for i in sentences], out_type=str)
+        input_tokens = self.tokenize(sentences, src_lang=src_lang, tgt_lang=tgt_lang)
 
         t1 = time()
-        results = self.translator.translate_batch(
+        results = self.translate_batch(
             input_tokens,
             beam_size=beam_size,
             patience=patience,
             max_decoding_length=max_decoding_length,
             max_batch_size=max_batch_size,
-            **args,
+            src_lang=src_lang,
+            tgt_lang=tgt_lang,
+            **kwargs,
         )
         t2 = time()
         print(f"Translation time: {t2-t1}")
 
         output_tokens = [i.hypotheses[0] for i in results]
 
-        translated_sents = [self.target_tokenizer.decode(i) for i in output_tokens]
+        translated_sents = self.detokenize(output_tokens, src_lang=src_lang, tgt_lang=tgt_lang)
 
         indices = [i[0] for i in sentences]
         paragraphs = [i[1] for i in sentences]
@@ -137,22 +154,195 @@ class Translator:
 
     @validate_call
     def translate_file(self, input_file: str, output_file: str, **kwargs) -> None:
-        """Translate a file with a quickmt model 
+        """Translate a file with a quickmt model
 
         Args:
             file_path (str): Path to plain-text file to translate
         """
         with open(input_file, "rt") as myfile:
             src = myfile.readlines()
-        
+
         # Remove newlines
         src = [i.strip() for i in src]
-        
+
         # Translate
         mt = self(src, **kwargs)
-        
+
         # Replace newlines to ensure output is the same number of lines
         mt = [i.replace("\n", "\t") for i in mt]
 
         with open(output_file, "wt") as myfile:
-            myfile.write("".join([i+"\n" for i in mt]))
+            myfile.write("".join([i + "\n" for i in mt]))
+
+
+class Translator(TranslatorABC):
+    def __init__(self, model_path: DirectoryPath, **kwargs):
+        """Create quickmt translation object
+
+        Args:
+            model_path (DirectoryPath): Path to quickmt model folder
+            **kwargs: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
+        """
+        super().__init__(model_path, **kwargs)
+        joint_tokenizer_path = self.model_path / "joint.spm.model"
+        if joint_tokenizer_path.exists():
+            self.source_tokenizer = sentencepiece.SentencePieceProcessor(str(self.model_path / "joint.spm.model"))
+            self.target_tokenizer = sentencepiece.SentencePieceProcessor(str(self.model_path / "joint.spm.model"))
+        else:
+            self.source_tokenizer = sentencepiece.SentencePieceProcessor(str(self.model_path / "src.spm.model"))
+            self.target_tokenizer = sentencepiece.SentencePieceProcessor(str(self.model_path / "tgt.spm.model"))
+
+    def tokenize(self, sentences: List[str], **kwargs):
+        return self.source_tokenizer.encode([i[2] for i in sentences], out_type=str)
+
+    def detokenize(self, sentences: List[List[str]], **kwargs):
+        return [self.target_tokenizer.decode(i).replace("▁", " ") for i in sentences]
+
+    def translate_batch(
+        self,
+        input_tokens: List[List[str]],
+        beam_size: int = 5,
+        patience: int = 1,
+        max_decoding_length: int = 256,
+        max_batch_size: int = 32,
+        src_lang: str = None,
+        tgt_lang: str = None,
+        **kwargs,
+    ):
+        return self.translator.translate_batch(
+            input_tokens,
+            beam_size=beam_size,
+            patience=patience,
+            max_decoding_length=max_decoding_length,
+            max_batch_size=max_batch_size,
+            **kwargs,
+        )
+
+
+class OpusmtTranslator(TranslatorABC):
+    def __init__(self, model_path: DirectoryPath, model_string: str, **kwargs):
+        """Create opus-mt translation object
+
+        Args:
+            model_path (DirectoryPath): Path to opus-mt exported ctranslate2 model folder
+            model_string (str): Huggingface model ID
+            **kwargs: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
+        """
+        from transformers import AutoTokenizer
+
+        super().__init__(model_path, **kwargs)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_string)
+
+    def tokenize(self, sentences: List[str], **kwargs):
+        return [self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i[2])) for i in sentences]
+
+    def detokenize(self, sentences: List[List[str]], **kwargs):
+        return [self.tokenizer.decode(self.tokenizer.convert_tokens_to_ids(i)) for i in sentences]
+
+    def translate_batch(
+        self,
+        input_tokens: List[List[str]],
+        beam_size: int = 5,
+        patience: int = 1,
+        max_decoding_length: int = 256,
+        max_batch_size: int = 32,
+        src_lang: str = None,
+        tgt_lang: str = None,
+        **kwargs,
+    ):
+        return self.translator.translate_batch(
+            input_tokens,
+            beam_size=beam_size,
+            patience=patience,
+            max_decoding_length=max_decoding_length,
+            max_batch_size=max_batch_size,
+            **kwargs,
+        )
+
+
+class M2m100Translator(TranslatorABC):
+    def __init__(self, model_path: DirectoryPath, **kwargs):
+        """Create M2M100 translation object
+
+        Args:
+            model_path (DirectoryPath): Path to opus-mt exported ctranslate2 model folder
+            **kwargs: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
+        """
+        from transformers import AutoTokenizer
+
+        super().__init__(model_path, **kwargs)
+        self.tokenizer = AutoTokenizer.from_pretrained("facebook/m2m100_1.2B")
+
+    def tokenize(self, sentences: List[str], src_lang: str, **kwargs):
+        self.tokenizer.src_lang = src_lang
+        return [self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i[2])) for i in sentences]
+
+    def detokenize(self, sentences: List[List[str]], **kwargs):
+        return [
+            self.tokenizer.decode(self.tokenizer.convert_tokens_to_ids(i), skip_special_tokens=True) for i in sentences
+        ]
+
+    def translate_batch(
+        self,
+        input_tokens: List[List[str]],
+        tgt_lang: str,
+        beam_size: int = 5,
+        patience: int = 1,
+        max_decoding_length: int = 256,
+        max_batch_size: int = 32,
+        src_lang: str = None,
+        **kwargs,
+    ):
+        return self.translator.translate_batch(
+            input_tokens,
+            beam_size=beam_size,
+            patience=patience,
+            max_decoding_length=max_decoding_length,
+            max_batch_size=max_batch_size,
+            target_prefix=[[f"__{tgt_lang}__"]] * len(input_tokens),
+            **kwargs,
+        )
+
+
+class NllbTranslator(TranslatorABC):
+    def __init__(self, model_path: DirectoryPath, **kwargs):
+        """Create NLLB translation object
+
+        Args:
+            model_path (DirectoryPath): Path to opus-mt exported ctranslate2 model folder
+            **kwargs: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
+        """
+        from transformers import AutoTokenizer
+
+        super().__init__(model_path, **kwargs)
+        self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-1.3B", src_lang="zho_Hans")
+
+    def tokenize(self, sentences: List[str], src_lang: str, **kwargs):
+        self.tokenizer.src_lang = src_lang
+        return [self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i[2])) for i in sentences]
+
+    def detokenize(self, sentences: List[List[str]], **kwargs):
+        return [
+            self.tokenizer.decode(self.tokenizer.convert_tokens_to_ids(i), skip_special_tokens=True) for i in sentences
+        ]
+
+    def translate_batch(
+        self,
+        input_tokens: List[List[str]],
+        tgt_lang: str,
+        beam_size: int = 5,
+        patience: int = 1,
+        max_decoding_length: int = 512,
+        max_batch_size: int = 32,
+        src_lang: str = None,
+        **kwargs,
+    ):
+        return self.translator.translate_batch(
+            input_tokens,
+            beam_size=beam_size,
+            patience=patience,
+            max_decoding_length=max_decoding_length,
+            max_batch_size=max_batch_size,
+            target_prefix=[[tgt_lang]] * len(input_tokens),
+            **kwargs,
+        )
