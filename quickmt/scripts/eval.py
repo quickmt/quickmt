@@ -51,10 +51,7 @@ def eval(
         ref.append(i[f"sentence_{tgt_lang}"])
 
     print("Translating")
-    t1 = time()
     mt = t(src, max_batch_size=max_batch_size, max_decoding_length=max_decoding_length, beam_size=beam_size)
-    t2 = time()
-    print(f"Translation time: {t2-t1}")
 
     # Write results to file, for COMET scoring
     if output_file:

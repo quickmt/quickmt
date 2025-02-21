@@ -20,6 +20,7 @@ def hf_list():
 def hf_upload(
     repo_id: str,
     input_dir: str,
+    joint_vocab: bool = False
 ):
     """Uploads a quickmt model to the Hugging Face Hub.
     # adaptions from https://github.com/michaelfeil/hf-hub-ctranslate2/blob/main/hf_hub_ctranslate2/util/utils.py
@@ -35,16 +36,39 @@ def hf_upload(
     api = HfApi()
 
     input_path = Path(input_dir)
+    eole_model_path = Path(input_dir)/"eole-model"
+    if joint_vocab:
+        for f in (
+            "README.md",
+            "config.json",
+            "model.bin",
+            "shared_vocabulary.json",
+            "joint.spm.model",
+            "eole-config.yaml"
+        ):
+            assert Path(input_path / f).is_file(), f"Cannot upload - must include {f}"
+ 
+    else:
+        for f in (
+            "README.md",
+            "config.json",
+            "model.bin",
+            "source_vocabulary.json",
+            "src.spm.model",
+            "target_vocabulary.json",
+            "tgt.spm.model",
+            "eole-config.yaml"
+        ):
+            assert Path(input_path / f).is_file(), f"Cannot upload - must include {f}"
+
     for f in (
-        "README.md",
         "config.json",
-        "model.bin",
-        "source_vocabulary.json",
-        "src.spm.model",
-        "target_vocabulary.json",
-        "tgt.spm.model",
+        "vocab.json",
+        "model.00.safetensors"
     ):
-        assert Path(input_path / f).is_file(), f"Cannot upload - must include {f}"
+        assert Path(eole_model_path / f).is_file(), f"Cannot upload - must include {f}"
+
+    
 
     api.upload_folder(
         folder_path=input_dir,
@@ -78,9 +102,12 @@ def hf_download(
         "config.json",
         "model.bin",
         "source_vocabulary.json",
-        "src.spm.model",
         "target_vocabulary.json",
+        "shared_vocabulary.json",
+        "src.spm.model",
         "tgt.spm.model",
+        "joint.spm.model",
+        "eole-config.yaml"
     ]
 
     return huggingface_hub.snapshot_download(
