@@ -44,6 +44,8 @@ def hf_upload(
             "model.bin",
             "shared_vocabulary.json",
             "joint.spm.model",
+            "joint.eole.vocab",
+            "joint.spm.vocab",
             "eole-config.yaml"
         ):
             assert Path(input_path / f).is_file(), f"Cannot upload - must include {f}"
