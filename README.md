@@ -12,6 +12,9 @@ pip install ./quickmt/
 ## Download model
 
 ```bash
+# List available models
+quickmt-list
+
 quickmt-model-download quickmt/quickmt-zh-en ./quickmt-zh-en
 ```
 
