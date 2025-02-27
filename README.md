@@ -1,4 +1,4 @@
-# `quickmt-zh-en` Neural Machine Translation Library 
+# `quickmt` Neural Machine Translation Library 
 
 A reasonably quick and reasonably accurate neural machine translation toolkit. Models are trained using [`eole`](https://github.com/eole-nlp/eole) and inference using [`ctranslate2`](https://github.com/OpenNMT/CTranslate2) with [`sentencepiece`](https://github.com/google/sentencepiece) for tokenization.
 
