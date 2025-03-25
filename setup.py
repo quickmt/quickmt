@@ -28,6 +28,7 @@ setup(
             "quickmt-model-upload=quickmt.hub:upload",
             "quickmt-corpus-upload=quickmt.scripts.corpus_to_hf:main",
             "quickmt-translate-file=quickmt.scripts.translate_file:main",
+            "quickmt-app=quickmt.scripts.app:main",
         ],
     },
 )

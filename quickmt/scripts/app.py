@@ -2,14 +2,15 @@ from pathlib import Path
 
 from fasthtml.common import *
 from fire import Fire
+
 # MonsterUI shadows fasthtml components with the same name
 from monsterui.all import *
 
 from quickmt import Translator
 
 model_folder = Path(".")
-models = []
-t = ""
+models = [i for i in model_folder.glob("quickmt-*")]
+t = Translator(str(Path(model_folder) / models[0]))
 
 # Get frankenui and tailwind headers via CDN using Theme.blue.headers()
 hdrs = Theme.blue.headers()
@@ -19,12 +20,10 @@ hdrs = Theme.blue.headers()
 app, rt = fast_app(hdrs=hdrs)
 
 
-def translation_form(input_text: str = "", beam_size: int = 5, selected_model: str = None, model_folder: str = "."):
-    model_folder = Path(model_folder).absolute()
-    models = [i for i in model_folder.glob("quickmt-*")]
+def translation_form(input_text: str = "", beam_size: int = 5, selected_model: str = None):
+
     return Form(
         Group(
-            LabelInput("Model Folder", name="model_folder", value=model_folder),
             LabelSelect(
                 *Options("Select a model", *models, selected_idx=1, disabled_idxs={0}),
                 label="Model",
@@ -65,19 +64,16 @@ def index():
 
 @rt
 @app.post("/translate")
-def translate(input_text: str, beam_size: int, selected_model: str, model_folder: str):
+def translate(input_text: str, beam_size: int, selected_model: str):
     global t
-    if t:
-        if str(selected_model) != t.model_path:
-            t = Translator(str(Path(model_folder) / selected_model))
-    else:
+    if str(selected_model) != t.model_path:
         t = Translator(str(Path(model_folder) / selected_model))
 
     return "\n".join(t(input_text.splitlines(), beam_size=beam_size))
 
 
-def run_app(host: str = "127.0.0.1", port: str = 5001):
+def main(host: str = "127.0.0.1", port: str = 5001):
     serve(host=host, port=port)
 
 
-Fire(run_app)
+Fire(main)
