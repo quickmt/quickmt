@@ -21,7 +21,6 @@ app, rt = fast_app(hdrs=hdrs)
 
 
 def translation_form(input_text: str = "", beam_size: int = 5, selected_model: str = None):
-
     return Form(
         Group(
             LabelSelect(
@@ -66,7 +65,8 @@ def index():
 @app.post("/translate")
 def translate(input_text: str, beam_size: int, selected_model: str):
     global t
-    if str(selected_model) != t.model_path:
+    if str(selected_model) != str(t.model_path):
+        print(f"Loading model {selected_model}")
         t = Translator(str(Path(model_folder) / selected_model))
 
     return "\n".join(t(input_text.splitlines(), beam_size=beam_size))
