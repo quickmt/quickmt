@@ -17,7 +17,7 @@ except:
     t = None
 
 # Get frankenui and tailwind headers via CDN using Theme.blue.headers()
-hdrs = Theme.blue.headers()
+hdrs = Theme.green.headers(mode="dark")
 app, rt = fast_app(hdrs=hdrs)
 
 
