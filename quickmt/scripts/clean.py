@@ -129,8 +129,8 @@ def clean_input(
     t_printable = t.translate(NOPRINT_TRANS_TABLE)
 
     # Remove non-utf8 chars
-    s_clean = s_printable.encode("utf-8", errors="ignore").decode("utf-8").replace("\t", " ")
-    t_clean = t_printable.encode("utf-8", errors="ignore").decode("utf-8").replace("\t", " ")
+    s_clean = s_printable.encode("utf-8", errors="ignore").decode("utf-8").replace("\t", " ").replace("￨", "|")
+    t_clean = t_printable.encode("utf-8", errors="ignore").decode("utf-8").replace("\t", " ").replace("￨", "|")
 
     # Min/max char length and copy filter
     if char_length_match(s_clean, t_clean, min_char_length, max_char_length, length_ratio):
