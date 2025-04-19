@@ -1,7 +1,17 @@
-[tool.flake8]
-max-line-length = 120
-ignore = ["E203", "E731", "W503"]
-# exclude = ["tests/*", "migrations/*"]
-
-[tool.black]
-line-length = 120
+[project]
+name = "quickmt"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "blingfire>=0.1.8",
+    "ctranslate2>=4.6.0",
+    "datasets>=3.5.0",
+    "fire>=0.7.0",
+    "huggingface-hub>=0.30.2",
+    "monsterui>=1.0.19",
+    "pydantic>2",
+    "sacrebleu>=2.5.1",
+    "sentencepiece>=0.2.0",
+]
