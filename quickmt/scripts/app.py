@@ -11,29 +11,34 @@ GITHUB_SVG = """<svg width="40px" height="40px" viewBox="0 0 100 100" xmlns="htt
 model_folder = Path(".")
 models = [i for i in model_folder.glob("quickmt-*")]
 
-try:
-    t = Translator(str(Path(model_folder) / models[0]))
-except:
-    t = None
+t = None
 
 # Get frankenui and tailwind headers via CDN using Theme.blue.headers()
 hdrs = Theme.green.headers(mode="dark")
-app, rt = fast_app(hdrs=hdrs)
+app, rt = fast_app(hdrs=hdrs, title="Test")
 
 
 def translation_form(
     input_text: str = "",
-    beam_size: int = 4,
+    beam_size: int = 2,
+    num_threads: int = 4,
     selected_model: str = None,
     selected_device: str = None,
 ):
     return Form(
-        Group(
+        Grid(
             LabelSelect(
-                *Options("Select a model", *models, selected_idx=1, disabled_idxs={0}),
+                *Options("Select a model", *models, selected_idx=0, disabled_idxs={0}),
                 label="Model",
                 name="selected_model",
                 value=selected_model,
+            ),
+            LabelSelect(
+                *Options("Compute Device", *("auto", "cpu", "cuda"), selected_idx=1, disabled_idxs={0}),
+                label="Device",
+                name="selected_device",
+                value=selected_device,
+                data_uk_tooltip="title:Auto will use GPU if available and CPU otherwise; pos:top-left",
             ),
             LabelInput(
                 "Beam Size",
@@ -41,22 +46,24 @@ def translation_form(
                 value=beam_size,
                 data_uk_tooltip="title:Balances speed and quality. Set to 1 for fastest speed, 8 for higher quality; pos:top-left",
             ),
+            LabelInput(
+                "CPU Cores",
+                name="num_threads",
+                value=num_threads,
+                data_uk_tooltip="title:Number of CPU cores to use for multi-threading; pos:top-left",
+            ),
+            cls="space-x-2",
         ),
-        LabelSelect(
-            *Options("Compute Device", *("auto", "cpu", "cuda"), selected_idx=1, disabled_idxs={0}),
-            label="Device",
-            name="selected_device",
-            value=selected_device,
-        ),
-        LabelTextArea("Input Text", name="input_text", style="min-height: 400px;"),
+        LabelTextArea("Input Text", name="input_text", style="min-height: 540px;"),
         Button("Translate", cls=(ButtonT.primary, "mt-2")),
         method="post",
         hx_target="#output_text",
         hx_post="/translate",
+        hx_swap="innerHTML",
     )
 
 
-def error_message(title: str, body: str):
+def error_message(body: str, title: str):
     return Alert(DivLAligned(UkIcon("triangle-alert"), B(f"ERROR: {title}"), P(body)), cls=AlertT.error)
 
 
@@ -71,7 +78,7 @@ def menu_bar():
                 ),
             ),
         ),
-        brand=A(H2("quickmt-app"), href="/"),
+        brand=A(H1("quickmt"), href="/"),
     )
 
 
@@ -80,11 +87,7 @@ def index():
     if len(models) > 0:
         body_content = Grid(
             Div(translation_form(), cls="mt-5 mr-5"),
-            Div(
-                LabelTextArea("Translation", id="output_text", style="min-height: 600px;"),
-                cols_lg=2,
-                cls="mt-10 ml-5 mr-10",
-            ),
+            Div(cols_lg=2, cls="mt-10 ml-5 mr-10", id="output_text"),
             cls="ml-10 mr-5",
         )
 
@@ -93,22 +96,36 @@ def index():
             title="quickmt models not found",
             body="No quickmt models were found in current working directory. Please change directories before launching the quickmt-app or download models into this folder.",
         )
-    return Main(menu_bar(), body_content)
+    return Title("quickmt"), Main(menu_bar(), body_content)
 
 
 @rt
 @app.post("/translate")
-def translate(input_text: str, beam_size: int, selected_model: str, selected_device: str):
+def translate(input_text: str, beam_size: int, selected_model: str, selected_device: str, num_threads: int):
     global t
-    if str(selected_model) != str(t.model_path):
+    if t is None or str(selected_model) != str(t.model_path):
         print(f"Loading model {selected_model}")
-        t = Translator(str(Path(model_folder) / selected_model), device=selected_device)
+        try:
+            t = Translator(
+                str(Path(model_folder) / selected_model), device=selected_device, inter_threads=int(num_threads)
+            )
+        except:
+            if selected_device in ("auto", "gpu"):
+                return error_message(
+                    title="Could not load model",
+                    body="Be sure the cuda toolkit is installed and you have enough available GPU RAM.",
+                )
 
-    return "\n".join(t(input_text.splitlines(), beam_size=beam_size))
+    return LabelTextArea(
+        "Translation",
+        id="output_text",
+        style="min-height: 600px;",
+        value="\n".join(t(input_text.splitlines(), beam_size=beam_size)),
+    )
 
 
-def main(host: str = "127.0.0.1", port: str = 5001):
-    serve(host=host, port=port)
+def main(host: str = "127.0.0.1", port: str = 5001, reload: bool = True):
+    serve(host=host, port=port, reload=reload)
 
 
 Fire(main)
