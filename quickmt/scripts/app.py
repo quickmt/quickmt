@@ -4,14 +4,13 @@ import monsterui.all as mui
 from fasthtml.common import *
 from fire import Fire
 from monsterui.all import *
-from starlette.background import BackgroundTask
 from quickmt import Translator
 from quickmt.hub import hf_list, hf_download
 
 
 hdrs = Theme.green.headers(mode="dark", highlightjs=True)
 
-app, rt = fast_app(hdrs=hdrs, key_fname="/tmp/quickmt.sesskey")
+app, rt = fast_app(hdrs=hdrs)
 app.title = "quickmt"
 
 t = None
@@ -99,7 +98,7 @@ def index():
 
 @rt
 @app.post("/download_model")
-def download_model(session, selected_model: str, model_folder: str):
+def download_model(selected_model: str, model_folder: str):
     hf_download(model_name="quickmt/" + selected_model, output_dir=Path(model_folder) / selected_model)
     return Alert(
         DivLAligned(UkIcon("thumbsup"), B(f"Download complete"), P(f"Finished downloading {selected_model}")),
@@ -129,7 +128,6 @@ def model_download_panel(selected_model: str, model_folder: str):
 @rt
 @app.post("/translate")
 def translate(
-    session,
     input_text: str,
     beam_size: int,
     selected_model: str,
