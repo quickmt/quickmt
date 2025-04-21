@@ -1,17 +1,40 @@
 [project]
 name = "quickmt"
 version = "0.1.0"
-description = "Add your description here"
+description = "Teasonably quick neural machine translation powered by CTranslate2"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "blingfire>=0.1.8",
     "ctranslate2>=4.6.0",
     "datasets>=3.5.0",
+    "faicons>=0.2.2",
     "fire>=0.7.0",
     "huggingface-hub>=0.30.2",
-    "monsterui>=1.0.19",
+    "libsass>=0.23.0",
     "pydantic>2",
     "sacrebleu>=2.5.1",
     "sentencepiece>=0.2.0",
+    "shiny>=1.4.0",
 ]
+
+#[project.optional-dependencies]
+#app = [
+#  "rich",
+#  "click",
+#]
+
+[project.urls]
+"Homepage" = "https://github.com/quickmt/quickmt"
+"Bug Tracker" = "https://github.com/quickmt/quickmt/issues"
+
+[project.scripts]
+quickmt-clean="quickmt.scripts.clean:main"
+quickmt-eval="quickmt.scripts.eval:main"
+quickmt-list="quickmt.hub:list"
+quickmt-model-download="quickmt.hub:download"
+quickmt-model-upload="quickmt.hub:upload"
+quickmt-corpus-upload="quickmt.scripts.corpus_to_hf:main"
+quickmt-translate-file="quickmt.scripts.translate_file:main"
+quickmt-app="quickmt.scripts.quickmt_app:main"
+
