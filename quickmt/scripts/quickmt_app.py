@@ -17,7 +17,9 @@ def runapp(port: int = 8000, host: str = "127.0.0.1", theme: str = "flatly"):
 
     app_ui = ui.page_sidebar(
         ui.sidebar(
-            ui.layout_columns(ui.input_dark_mode(mode="dark"), ui.p("Toggle Dark Mode")),
+            ui.layout_columns(
+                ui.input_dark_mode(mode="dark"), ui.p("Toggle Dark Mode")
+            ),
             ui.input_selectize(
                 "model", "Select model", choices=[i.split("/")[1] for i in hf_list()]
             ),
@@ -54,7 +56,7 @@ def runapp(port: int = 8000, host: str = "127.0.0.1", theme: str = "flatly"):
         ),
         title=ui.h3("quickmt", style="font-family: verdana;"),
         window_title="quickmt",
-        theme=ui.Theme(theme).add_defaults(navbar_bg="#2C3034")  #.add_defaults(navbar_bg="#0E7135")
+        theme=ui.Theme(theme).add_defaults(navbar_bg="#2C3034"),
     )
 
     def server(input, output, session):
