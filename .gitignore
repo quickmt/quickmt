@@ -8,3 +8,7 @@ quickmt-zh-en
 build
 .sesskey
 docs/training-*
+.python-version
+uv.lock
+docs/notebooks/.ipynb_checkpoints/
+docs/notebooks/Testing.ipynb
