@@ -94,12 +94,12 @@ def server(input, output, session):
             ]
 
 
-app = App(app_ui, server)
-
-
-def main(port: int = 8000, host: str = "127.0.0.1"):
+def runapp(port: int = 8000, host: str = "127.0.0.1"):
+    app = App(app_ui, server)
     uvicorn.run(app, port=port, host=host)
 
+def main(): Fire(runapp)
+    
 
 if __name__ == "__main__":
-    Fire(main)
+    main()
