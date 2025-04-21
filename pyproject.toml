@@ -1,7 +1,7 @@
 [project]
 name = "quickmt"
 version = "0.1.0"
-description = "Teasonably quick neural machine translation powered by CTranslate2"
+description = "Reasonably quick neural machine translation powered by CTranslate2"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -17,12 +17,6 @@ dependencies = [
     "sentencepiece>=0.2.0",
     "shiny>=1.4.0",
 ]
-
-#[project.optional-dependencies]
-#app = [
-#  "rich",
-#  "click",
-#]
 
 [project.urls]
 "Homepage" = "https://github.com/quickmt/quickmt"
