@@ -17,24 +17,45 @@ def runapp(port: int = 8000, host: str = "127.0.0.1", theme: str = "flatly"):
 
     app_ui = ui.page_sidebar(
         ui.sidebar(
+            ui.tooltip(
+                ui.input_selectize(
+                    "model",
+                    "Select model",
+                    choices=[i.split("/")[1] for i in hf_list()],
+                ),
+                "quickmt model to use. quickmt-fr-en will translate from French (fr) to English (en)",
+            ),
+            ui.tooltip(
+                ui.input_text(
+                    "model_folder", "Model Folder", value=str(Path(".").absolute())
+                ),
+                "Folder where quickmt models are (or will be) stored.",
+            ),
+            ui.tooltip(
+                ui.input_slider(
+                    "beam_size", "Beam size", min=1, max=8, step=1, value=2
+                ),
+                "Balances speed and quality. 1 for fastest speed, 8 for highest quality, in between for a balance.",
+            ),
+            ui.tooltip(
+                ui.input_numeric(
+                    "num_threads", "CPU Threads", min=1, max=16, step=1, value=4
+                ),
+                "Number of CPU threads to use for translation. Does not affect speed when using GPU.",
+            ),
+            ui.tooltip(
+                ui.input_selectize(
+                    "compute_device",
+                    "Compute Device",
+                    choices=["auto", "cpu", "cuda"],
+                    selected="cpu",
+                ),
+                "Auto will use the GPU if available, otherwise will use CPU.",
+            ),
             ui.layout_columns(
-                ui.input_dark_mode(mode="dark"), ui.p("Toggle Dark Mode")
-            ),
-            ui.input_selectize(
-                "model", "Select model", choices=[i.split("/")[1] for i in hf_list()]
-            ),
-            ui.input_text(
-                "model_folder", "Model Folder", value=str(Path(".").absolute())
-            ),
-            ui.input_numeric("beam_size", "Beam size", min=1, max=10, step=1, value=2),
-            ui.input_numeric(
-                "num_threads", "CPU Threads", min=1, max=16, step=1, value=4
-            ),
-            ui.input_selectize(
-                "compute_device",
-                "Compute Device",
-                choices=["auto", "cpu", "gpu"],
-                selected="cpu",
+                ui.input_dark_mode(mode="dark"),
+                ui.p("Toggle Dark Mode"),
+                col_widths=[2, 10],
             ),
             width="350px",
         ),
