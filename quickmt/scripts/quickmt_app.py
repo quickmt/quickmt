@@ -13,8 +13,10 @@ t = None
 ui.tags.style(".h1: {font-size: 48px;}")
 
 
-def runapp(port: int = 8000, host: str = "127.0.0.1", theme: str = "flatly"):
-
+def runapp(port: int = 8000, host: str = "127.0.0.1"):
+    ui.navbar_options(
+        bg="red",
+    )
     app_ui = ui.page_sidebar(
         ui.sidebar(
             ui.tooltip(
@@ -23,13 +25,13 @@ def runapp(port: int = 8000, host: str = "127.0.0.1", theme: str = "flatly"):
                     "Select model",
                     choices=[i.split("/")[1] for i in hf_list()],
                 ),
-                "quickmt model to use. quickmt-fr-en will translate from French (fr) to English (en)",
+                "QuickMT model to use. quickmt-fr-en will translate from French (fr) to English (en)",
             ),
             ui.tooltip(
                 ui.input_text(
                     "model_folder", "Model Folder", value=str(Path(".").absolute())
                 ),
-                "Folder where quickmt models are (or will be) stored.",
+                "Folder where QuickMT models are (or will be) stored.",
             ),
             ui.tooltip(
                 ui.input_slider(
@@ -61,7 +63,7 @@ def runapp(port: int = 8000, host: str = "127.0.0.1", theme: str = "flatly"):
         ),
         ui.layout_columns(
             ui.card(
-                ui.h5("Input Text"),
+                ui.h4("Input Text"),
                 ui.input_text_area(
                     "input_text",
                     "",
@@ -73,11 +75,11 @@ def runapp(port: int = 8000, host: str = "127.0.0.1", theme: str = "flatly"):
                     "translate_button", "Translate!", class_="btn-primary"
                 ),
             ),
-            ui.card(ui.h5("Translation"), ui.output_ui("translate")),
+            ui.card(ui.h4("Translation"), ui.output_ui("translate")),
         ),
-        title=ui.h3("quickmt", style="font-family: verdana;"),
-        window_title="quickmt",
-        theme=ui.Theme(theme).add_defaults(navbar_bg="#2C3034"),
+        title=ui.h2("QuickMT"),
+        window_title="QuickMT",
+        theme=ui.Theme.from_brand(__file__),
     )
 
     def server(input, output, session):

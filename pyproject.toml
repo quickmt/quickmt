@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "blingfire>=0.1.8",
+    "brand-yml>=0.1.1",
     "ctranslate2>=4.6.0",
     "datasets>=3.5.0",
     "faicons>=0.2.2",
