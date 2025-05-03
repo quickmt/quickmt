@@ -10,15 +10,44 @@ from quickmt.hub import hf_download, hf_list
 
 t = None
 
-ui.tags.style(".h1: {font-size: 48px;}")
-
 
 def runapp(port: int = 8000, host: str = "127.0.0.1"):
     ui.navbar_options(
         bg="red",
     )
-    app_ui = ui.page_sidebar(
-        ui.sidebar(
+    app_ui = ui.page_navbar(
+        ui.nav_panel(
+            None,
+            ui.layout_columns(
+                ui.card(
+                    ui.h4("Input Text"),
+                    ui.input_text_area(
+                        "input_text",
+                        "",
+                        value="",
+                        width="100%",
+                        height="600px",
+                    ),
+                    ui.input_action_button(
+                        "translate_button", "Translate!", class_="btn-primary"
+                    ),
+                ),
+                ui.card(ui.h4("Translation"), ui.output_ui("translate")),
+            ),
+        ),
+        ui.nav_spacer(),
+        ui.nav_control(
+            ui.input_dark_mode(mode="dark", style="padding-top: 10px;"),
+        ),
+        ui.nav_control(
+            ui.a(
+                icon("github", height="30px", width="30px"),
+                href="https://github.com/quickmt/quickmt",
+                target="_blank",
+                class_="btn",
+            )
+        ),
+        sidebar=ui.sidebar(
             ui.tooltip(
                 ui.input_selectize(
                     "model",
@@ -54,28 +83,12 @@ def runapp(port: int = 8000, host: str = "127.0.0.1"):
                 ),
                 "Auto will use the GPU if available, otherwise will use CPU.",
             ),
-            ui.layout_columns(
-                ui.input_dark_mode(mode="dark"),
-                ui.p("Toggle Dark Mode"),
-                col_widths=[2, 10],
-            ),
+            # ui.layout_columns(
+            #     ui.input_dark_mode(mode="dark"),
+            #     ui.p("Toggle Dark Mode"),
+            #     col_widths=[2, 10],
+            # ),
             width="350px",
-        ),
-        ui.layout_columns(
-            ui.card(
-                ui.h4("Input Text"),
-                ui.input_text_area(
-                    "input_text",
-                    "",
-                    value="",
-                    width="100%",
-                    height="600px",
-                ),
-                ui.input_action_button(
-                    "translate_button", "Translate!", class_="btn-primary"
-                ),
-            ),
-            ui.card(ui.h4("Translation"), ui.output_ui("translate")),
         ),
         title=ui.h2("QuickMT"),
         window_title="QuickMT",
