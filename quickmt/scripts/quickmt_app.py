@@ -37,15 +37,17 @@ def runapp(port: int = 8000, host: str = "127.0.0.1"):
         ),
         ui.nav_spacer(),
         ui.nav_control(
-            ui.input_dark_mode(mode="dark", style="padding-top: 10px;"),
+            ui.input_dark_mode(
+                id="darkmode_toggle", mode="dark", style="padding-top: 10px;"
+            ),
         ),
         ui.nav_control(
             ui.a(
-                icon("github", height="30px", width="30px"),
+                icon("github", height="30px", width="30px", fill="#17a2b8"),
                 href="https://github.com/quickmt/quickmt",
                 target="_blank",
-                class_="btn",
-            )
+                class_="btn btn-link",
+            ),
         ),
         sidebar=ui.sidebar(
             ui.tooltip(
@@ -83,16 +85,12 @@ def runapp(port: int = 8000, host: str = "127.0.0.1"):
                 ),
                 "Auto will use the GPU if available, otherwise will use CPU.",
             ),
-            # ui.layout_columns(
-            #     ui.input_dark_mode(mode="dark"),
-            #     ui.p("Toggle Dark Mode"),
-            #     col_widths=[2, 10],
-            # ),
             width="350px",
         ),
         title=ui.h2("QuickMT"),
         window_title="QuickMT",
         theme=ui.Theme.from_brand(__file__),
+        navbar_options=ui.navbar_options(underline=False, theme="auto"),
     )
 
     def server(input, output, session):

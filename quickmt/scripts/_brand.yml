@@ -8,16 +8,11 @@ meta:
 
 color:
   palette:
-    pink: "#E83E8C"
-    blue: "#007BFF"
     cyan: "#17A2B8"
-    teal: "#20C997"
     green: "#28A745"
     yellow: "#FFD700"
     orange: "#FF7F50"
     red: "#FF3333"
-    purple: "#6F42C1"
-    indigo: "#6610F2"
     black: "#1A1A1A"
     white: "#F8F8F8"
   foreground: black
@@ -30,33 +25,9 @@ color:
   dark: black
 typography:
   fonts:
-    - family: Roboto
-      source: google
-      weight: [400]
-      style: [normal,]
-      display: swap
-    - family: Merriweather
-      source: google
-      weight: [500]
-      style: [normal]
-      display: swap
-  base: 
-    family: Roboto
-    size: 18px
-    weight: 400
-    line-height: 1.2
-  headings:
-    family: Merriweather
-    weight: 500
-    line-height: 1.2
-    style: normal
-  link:
-    weight: 400
-    background-color: purple
-    color: white
-    decoration: "underline"
-
-defaults:
-  shiny:
-    theme:
-      preset: shiny
+    - family: Open Sans
+      source: bunny
+    - family: Source Code Pro
+      source: bunny
+  base: Open Sans
+  monospace: Source Code Pro
