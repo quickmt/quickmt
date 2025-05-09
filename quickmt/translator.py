@@ -39,7 +39,9 @@ class TranslatorABC(ABC):
                     stripped_sent = sent.strip()
                     if len(stripped_sent) > 0:
                         # If the next segment is just a few chars, just tack it on
-                        if (len(ret) > 0 and idx == ret[-1][0]) and (len(stripped_sent) < 5):
+                        if (len(ret) > 0 and idx == ret[-1][0]) and (
+                            len(stripped_sent) < 5
+                        ):
                             ret[-1][2] += stripped_sent
                         else:
                             ret.append([idx, paragraph, stripped_sent])
@@ -47,7 +49,11 @@ class TranslatorABC(ABC):
 
     @staticmethod
     @validate_call
-    def _sentence_join(src: List[Tuple[int, int, str]], paragraph_join_str: str = "\n", sent_join_str: str = " "):
+    def _sentence_join(
+        src: List[Tuple[int, int, str]],
+        paragraph_join_str: str = "\n",
+        sent_join_str: str = " ",
+    ):
         """Join sentences together
 
         Args:
@@ -71,16 +77,29 @@ class TranslatorABC(ABC):
         return ret
 
     @abstractmethod
-    def tokenize(self, sentences: List[str], src_lang: Optional[str] = None, tgt_lang: Optional[str] = None):
+    def tokenize(
+        self,
+        sentences: List[str],
+        src_lang: Optional[str] = None,
+        tgt_lang: Optional[str] = None,
+    ):
         pass
 
     @abstractmethod
-    def detokenize(self, sentences: List[List[str]], src_lang: Optional[str] = None, tgt_lang: Optional[str] = None):
+    def detokenize(
+        self,
+        sentences: List[List[str]],
+        src_lang: Optional[str] = None,
+        tgt_lang: Optional[str] = None,
+    ):
         pass
 
     @abstractmethod
     def translate_batch(
-        self, sentences: List[List[str]], src_lang: Optional[str] = None, tgt_lang: Optional[str] = None
+        self,
+        sentences: List[List[str]],
+        src_lang: Optional[str] = None,
+        tgt_lang: Optional[str] = None,
     ):
         pass
 
@@ -92,6 +111,7 @@ class TranslatorABC(ABC):
         max_decoding_length: int = 512,
         beam_size: int = 5,
         patience: int = 1,
+        verbose: bool = False,
         src_lang: Union[None, str] = None,
         tgt_lang: Union[None, str] = None,
         **kwargs,
@@ -117,11 +137,16 @@ class TranslatorABC(ABC):
 
         sentences = self._sentence_split(src)
 
-        input_tokens = self.tokenize(sentences, src_lang=src_lang, tgt_lang=tgt_lang)
+        if verbose:
+            print(f"Split sentences: {sentences}")
+
+        input_text = self.tokenize(sentences, src_lang=src_lang, tgt_lang=tgt_lang)
+        if verbose:
+            print(f"Tokenized input: {input_text}")
 
         t1 = time()
         results = self.translate_batch(
-            input_tokens,
+            input_text,
             beam_size=beam_size,
             patience=patience,
             max_decoding_length=max_decoding_length,
@@ -131,11 +156,17 @@ class TranslatorABC(ABC):
             **kwargs,
         )
         t2 = time()
-        print(f"Translation time: {t2-t1}")
+        if verbose:
+            print(f"Translation time: {t2-t1}")
 
         output_tokens = [i.hypotheses[0] for i in results]
 
-        translated_sents = self.detokenize(output_tokens, src_lang=src_lang, tgt_lang=tgt_lang)
+        if verbose:
+            print(f"Tokenized output: {output_tokens}")
+
+        translated_sents = self.detokenize(
+            output_tokens, src_lang=src_lang, tgt_lang=tgt_lang
+        )
 
         indices = [i[0] for i in sentences]
         paragraphs = [i[1] for i in sentences]
@@ -143,7 +174,9 @@ class TranslatorABC(ABC):
         ret = self._sentence_join(
             (
                 (idx, paragraph, translation)
-                for idx, paragraph, translation in zip(indices, paragraphs, translated_sents)
+                for idx, paragraph, translation in zip(
+                    indices, paragraphs, translated_sents
+                )
             )
         )
 
@@ -186,11 +219,19 @@ class Translator(TranslatorABC):
         super().__init__(model_path, **kwargs)
         joint_tokenizer_path = self.model_path / "joint.spm.model"
         if joint_tokenizer_path.exists():
-            self.source_tokenizer = sentencepiece.SentencePieceProcessor(str(self.model_path / "joint.spm.model"))
-            self.target_tokenizer = sentencepiece.SentencePieceProcessor(str(self.model_path / "joint.spm.model"))
+            self.source_tokenizer = sentencepiece.SentencePieceProcessor(
+                str(self.model_path / "joint.spm.model")
+            )
+            self.target_tokenizer = sentencepiece.SentencePieceProcessor(
+                str(self.model_path / "joint.spm.model")
+            )
         else:
-            self.source_tokenizer = sentencepiece.SentencePieceProcessor(str(self.model_path / "src.spm.model"))
-            self.target_tokenizer = sentencepiece.SentencePieceProcessor(str(self.model_path / "tgt.spm.model"))
+            self.source_tokenizer = sentencepiece.SentencePieceProcessor(
+                str(self.model_path / "src.spm.model")
+            )
+            self.target_tokenizer = sentencepiece.SentencePieceProcessor(
+                str(self.model_path / "tgt.spm.model")
+            )
 
     def tokenize(self, sentences: List[str], **kwargs):
         return self.source_tokenizer.encode([i[2] for i in sentences], out_type=str)
@@ -200,21 +241,47 @@ class Translator(TranslatorABC):
 
     def translate_batch(
         self,
-        input_tokens: List[List[str]],
+        input_text: List[List[str]],
         beam_size: int = 5,
         patience: int = 1,
         max_decoding_length: int = 256,
         max_batch_size: int = 32,
+        disable_unk: bool = True,
+        replace_unknowns: bool = False,
+        length_penalty: float = 1.0,
+        coverage_penalty: float = 0.0,
         src_lang: str = None,
         tgt_lang: str = None,
         **kwargs,
     ):
+        """Translate a list of strings
+
+        Args:
+            input_text (List[List[str]]): Input text to be translated
+            beam_size (int, optional): Beam size for beam search. Defaults to 5.
+            patience (int, optional): Stop beam search when `patience` beams finish. Defaults to 1.
+            max_decoding_length (int, optional): Max decoding length for model. Defaults to 256.
+            max_batch_size (int, optional): Max batch size. Reduce to limit RAM usage. Increase for faster speed. Defaults to 32.
+            disable_unk (bool, optional): Disable generating unk token. Defaults to True.
+            replace_unknowns (bool, optional): Replace unk tokens with src token that has the highest attention value. Defaults to False.
+            length_penalty (float, optional): Length penalty. Defaults to 1.0.
+            coverage_penalty (float, optional): Coverage penalty. Defaults to 0.0.
+            src_lang (str, optional): Source language. Only needed for multilingual models. Defaults to None.
+            tgt_lang (str, optional): Target language. Only needed for multilingual models. Defaults to None.
+
+        Returns:
+            List[str]: Translated text
+        """
         return self.translator.translate_batch(
-            input_tokens,
+            input_text,
             beam_size=beam_size,
             patience=patience,
             max_decoding_length=max_decoding_length,
             max_batch_size=max_batch_size,
+            disable_unk=disable_unk,
+            replace_unknowns=replace_unknowns,
+            length_penalty=length_penalty,
+            coverage_penalty=coverage_penalty,
             **kwargs,
         )
 
@@ -234,14 +301,20 @@ class OpusmtTranslator(TranslatorABC):
         self.tokenizer = AutoTokenizer.from_pretrained(model_string)
 
     def tokenize(self, sentences: List[str], **kwargs):
-        return [self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i[2])) for i in sentences]
+        return [
+            self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i[2]))
+            for i in sentences
+        ]
 
     def detokenize(self, sentences: List[List[str]], **kwargs):
-        return [self.tokenizer.decode(self.tokenizer.convert_tokens_to_ids(i)) for i in sentences]
+        return [
+            self.tokenizer.decode(self.tokenizer.convert_tokens_to_ids(i))
+            for i in sentences
+        ]
 
     def translate_batch(
         self,
-        input_tokens: List[List[str]],
+        input_text: List[List[str]],
         beam_size: int = 5,
         patience: int = 1,
         max_decoding_length: int = 256,
@@ -251,7 +324,7 @@ class OpusmtTranslator(TranslatorABC):
         **kwargs,
     ):
         return self.translator.translate_batch(
-            input_tokens,
+            input_text,
             beam_size=beam_size,
             patience=patience,
             max_decoding_length=max_decoding_length,
@@ -275,16 +348,22 @@ class M2m100Translator(TranslatorABC):
 
     def tokenize(self, sentences: List[str], src_lang: str, **kwargs):
         self.tokenizer.src_lang = src_lang
-        return [self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i[2])) for i in sentences]
+        return [
+            self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i[2]))
+            for i in sentences
+        ]
 
     def detokenize(self, sentences: List[List[str]], **kwargs):
         return [
-            self.tokenizer.decode(self.tokenizer.convert_tokens_to_ids(i), skip_special_tokens=True) for i in sentences
+            self.tokenizer.decode(
+                self.tokenizer.convert_tokens_to_ids(i), skip_special_tokens=True
+            )
+            for i in sentences
         ]
 
     def translate_batch(
         self,
-        input_tokens: List[List[str]],
+        input_text: List[List[str]],
         tgt_lang: str,
         beam_size: int = 5,
         patience: int = 1,
@@ -294,12 +373,12 @@ class M2m100Translator(TranslatorABC):
         **kwargs,
     ):
         return self.translator.translate_batch(
-            input_tokens,
+            input_text,
             beam_size=beam_size,
             patience=patience,
             max_decoding_length=max_decoding_length,
             max_batch_size=max_batch_size,
-            target_prefix=[[f"__{tgt_lang}__"]] * len(input_tokens),
+            target_prefix=[[f"__{tgt_lang}__"]] * len(input_text),
             **kwargs,
         )
 
@@ -315,20 +394,28 @@ class NllbTranslator(TranslatorABC):
         from transformers import AutoTokenizer
 
         super().__init__(model_path, **kwargs)
-        self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-1.3B", src_lang="zho_Hans")
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            "facebook/nllb-200-distilled-1.3B", src_lang="zho_Hans"
+        )
 
     def tokenize(self, sentences: List[str], src_lang: str, **kwargs):
         self.tokenizer.src_lang = src_lang
-        return [self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i[2])) for i in sentences]
+        return [
+            self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i[2]))
+            for i in sentences
+        ]
 
     def detokenize(self, sentences: List[List[str]], **kwargs):
         return [
-            self.tokenizer.decode(self.tokenizer.convert_tokens_to_ids(i), skip_special_tokens=True) for i in sentences
+            self.tokenizer.decode(
+                self.tokenizer.convert_tokens_to_ids(i), skip_special_tokens=True
+            )
+            for i in sentences
         ]
 
     def translate_batch(
         self,
-        input_tokens: List[List[str]],
+        input_text: List[List[str]],
         tgt_lang: str,
         beam_size: int = 5,
         patience: int = 1,
@@ -338,11 +425,11 @@ class NllbTranslator(TranslatorABC):
         **kwargs,
     ):
         return self.translator.translate_batch(
-            input_tokens,
+            input_text,
             beam_size=beam_size,
             patience=patience,
             max_decoding_length=max_decoding_length,
             max_batch_size=max_batch_size,
-            target_prefix=[[tgt_lang]] * len(input_tokens),
+            target_prefix=[[tgt_lang]] * len(input_text),
             **kwargs,
         )
