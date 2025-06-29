@@ -23,7 +23,7 @@ def batch(iterable, n):
         yield batch
 
 
-def main(
+def static_filter(
     src_dev: str,
     tgt_dev: str,
     src_input: str,
@@ -100,6 +100,8 @@ def main(
     print(f"Good line count: {good_count}")
     print(f"Bad line count: {bad_count}")
 
+def main():
+    Fire(static_filter)
 
 if __name__ == "__main__":
-    Fire(main)
+    main()
