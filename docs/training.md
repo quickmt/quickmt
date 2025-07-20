@@ -140,7 +140,23 @@ comet-score -s flores.som_Latn -r flores.eng_Latn -t mt.txt
 
 ```
 huggingface-cli login
-quickmt-model-upload quickmt/quickmt-so-en ./ct2-soen
+quickmt-model-upload quickmt/quickmt-de-en ./quickmt-de-en
+quickmt-model-upload quickmt/quickmt-ko-en ./quickmt-ko-en
+quickmt-model-upload quickmt/quickmt-en-ar ./quickmt-en-ar
+quickmt-model-upload quickmt/quickmt-ar-en ./quickmt-ar-en
+quickmt-model-upload quickmt/quickmt-ja-en ./quickmt-ja-en
+quickmt-model-upload quickmt/quickmt-it-en ./quickmt-it-en
+quickmt-model-upload quickmt/quickmt-en-it ./quickmt-en-it
+quickmt-model-upload quickmt/quickmt-ru-en ./quickmt-ru-en
+quickmt-model-upload quickmt/quickmt-en-ru ./quickmt-en-ru
+quickmt-model-upload quickmt/quickmt-pt-en ./quickmt-pt-en
+quickmt-model-upload quickmt/quickmt-en-pt ./quickmt-en-pt
+quickmt-model-upload quickmt/quickmt-bn-en ./quickmt-bn-en
+quickmt-model-upload quickmt/quickmt-en-bn ./quickmt-en-bn
+quickmt-model-upload quickmt/quickmt-id-en ./quickmt-id-en
+quickmt-model-upload quickmt/quickmt-en-id ./quickmt-en-id
+
+quickmt-model-upload quickmt/quickmt-fa-en ./quickmt-fa-en
 ```
 
 
