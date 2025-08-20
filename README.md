@@ -1,6 +1,6 @@
 # `quickmt` Neural Machine Translation Library 
 
-[![Try it out on Huggingface Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-lg.svg)]([https://huggingface.co/spaces](https://huggingface.co/spaces/quickmt/QuickMT-Demo))
+[![Open in Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-lg.svg)]([https://huggingface.co/spaces](https://huggingface.co/spaces/quickmt/QuickMT-Demo))
 
 A reasonably quick and reasonably accurate neural machine translation toolkit. Models are trained using [`eole`](https://github.com/eole-nlp/eole) and inference using [`ctranslate2`](https://github.com/OpenNMT/CTranslate2) with [`sentencepiece`](https://github.com/google/sentencepiece) for tokenization.
 
