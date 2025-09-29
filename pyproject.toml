@@ -25,6 +25,7 @@ dependencies = [
 
 [project.scripts]
 quickmt-clean="quickmt.scripts.clean:main"
+quickmt-static-filter="quickmt.scripts.static_filter:main"
 quickmt-eval="quickmt.scripts.eval:main"
 quickmt-list="quickmt.hub:list"
 quickmt-model-download="quickmt.hub:download"
