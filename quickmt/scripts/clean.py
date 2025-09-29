@@ -17,7 +17,9 @@ except:
 eng_words = set(words.words())
 
 # build a table mapping all non-printable characters to None
-NOPRINT_TRANS_TABLE = {i: None for i in range(0, sys.maxunicode + 1) if not chr(i).isprintable()}
+NOPRINT_TRANS_TABLE = {
+    i: None for i in range(0, sys.maxunicode + 1) if not chr(i).isprintable()
+}
 
 detok = MosesDetokenizer(lang="en")
 
@@ -31,6 +33,7 @@ def batch(iterable, n):
         if not batch:
             return
         yield batch
+
 
 def fasttext_lang_match(
     s,
@@ -139,11 +142,23 @@ def clean_input(
     t_printable = t.translate(NOPRINT_TRANS_TABLE)
 
     # Remove non-utf8 chars
-    s_clean = s_printable.encode("utf-8", errors="ignore").decode("utf-8").replace("\t", " ").replace("￨", "|")
-    t_clean = t_printable.encode("utf-8", errors="ignore").decode("utf-8").replace("\t", " ").replace("￨", "|")
+    s_clean = (
+        s_printable.encode("utf-8", errors="ignore")
+        .decode("utf-8")
+        .replace("\t", " ")
+        .replace("￨", "|")
+    )
+    t_clean = (
+        t_printable.encode("utf-8", errors="ignore")
+        .decode("utf-8")
+        .replace("\t", " ")
+        .replace("￨", "|")
+    )
 
     # Min/max char length and copy filter
-    if char_length_match(s_clean, t_clean, min_char_length, max_char_length, length_ratio):
+    if char_length_match(
+        s_clean, t_clean, min_char_length, max_char_length, length_ratio
+    ):
         # English only word/alphabet filter
         if english_text_match(s_clean, t_clean, src_lang, tgt_lang):
             # Langid filter

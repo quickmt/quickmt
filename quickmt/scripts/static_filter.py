@@ -12,7 +12,6 @@ from torch.nn.functional import cosine_similarity
 from tqdm import tqdm
 
 
-
 def batch(iterable, n):
     "Batch data into lists of length n. The last batch may be shorter."
     # batched('ABCDEFG', 3) --> ABC DEF G
@@ -23,7 +22,21 @@ def batch(iterable, n):
             return
         yield batch
 
-def main(src_dev: str, tgt_dev: str,  src_input: str, src_output: str, tgt_input:str, tgt_output: str, src_bad_output: str, tgt_bad_output: str, batch_size: int = 4096, truncate_dimension: int = 256, limit: int = 100000, sim_cutoff_quantile: str = 0.02):
+
+def main(
+    src_dev: str,
+    tgt_dev: str,
+    src_input: str,
+    src_output: str,
+    tgt_input: str,
+    tgt_output: str,
+    src_bad_output: str,
+    tgt_bad_output: str,
+    batch_size: int = 4096,
+    truncate_dimension: int = 256,
+    limit: int = 100000,
+    sim_cutoff_quantile: str = 0.02,
+):
     model = SentenceTransformer(
         "sentence-transformers/static-similarity-mrl-multilingual-v1",
         device="cpu",
@@ -43,12 +56,16 @@ def main(src_dev: str, tgt_dev: str,  src_input: str, src_output: str, tgt_input
 
     # Find the distance for which 98% of true pairs in the dev set have similarity greater than this value
     # Then we will exclude pairs with similarity less than this value
-    tgt_dev_embeddings = model.encode(tgt_dev, batch_size=batch_size, convert_to_tensor=True)
-    src_dev_embeddings = model.encode(src_dev, batch_size=batch_size, convert_to_tensor=True)
+    tgt_dev_embeddings = model.encode(
+        tgt_dev, batch_size=batch_size, convert_to_tensor=True
+    )
+    src_dev_embeddings = model.encode(
+        src_dev, batch_size=batch_size, convert_to_tensor=True
+    )
     sims = cosine_similarity(tgt_dev_embeddings, src_dev_embeddings).numpy()
     cutoff = np.quantile(sims, sim_cutoff_quantile)
     print(f"Similarity cutoff: {cutoff}")
-    
+
     with open(src_input, "rt") as src:
         with open(src_output, "wt") as src_out:
             with open(tgt_input, "rt") as tgt:
@@ -66,9 +83,11 @@ def main(src_dev: str, tgt_dev: str,  src_input: str, src_output: str, tgt_input
                                     batch_size=batch_size,
                                     convert_to_tensor=True,
                                 )
-            
-                                sims = cosine_similarity(tgt_embeddings, src_embeddings).numpy()
-            
+
+                                sims = cosine_similarity(
+                                    tgt_embeddings, src_embeddings
+                                ).numpy()
+
                                 for i, score in zip(x, sims):
                                     if score >= cutoff:
                                         src_out.write(i[0])
@@ -80,8 +99,7 @@ def main(src_dev: str, tgt_dev: str,  src_input: str, src_output: str, tgt_input
                                         bad_count += 1
     print(f"Good line count: {good_count}")
     print(f"Bad line count: {bad_count}")
-    
-                                        
+
 
 if __name__ == "__main__":
     Fire(main)
