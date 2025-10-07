@@ -48,19 +48,19 @@ def static_filter(
     bad_count = 0
     keep_going = True
 
-    with open("/home/mark/mt/pl-en/dev.tgt", "rt") as myfile:
-        tgt_dev = [i.strip() for i in myfile]
+    with open(tgt_dev, "rt") as myfile:
+        tgt_dev_txt = [i.strip() for i in myfile]
 
-    with open("/home/mark/mt/pl-en/dev.src", "rt") as myfile:
-        src_dev = [i.strip() for i in myfile]
+    with open(src_dev, "rt") as myfile:
+        src_dev_txt = [i.strip() for i in myfile]
 
     # Find the distance for which 98% of true pairs in the dev set have similarity greater than this value
     # Then we will exclude pairs with similarity less than this value
     tgt_dev_embeddings = model.encode(
-        tgt_dev, batch_size=batch_size, convert_to_tensor=True
+        tgt_dev_txt, batch_size=batch_size, convert_to_tensor=True
     )
     src_dev_embeddings = model.encode(
-        src_dev, batch_size=batch_size, convert_to_tensor=True
+        src_dev_txt, batch_size=batch_size, convert_to_tensor=True
     )
     sims = cosine_similarity(tgt_dev_embeddings, src_dev_embeddings).numpy()
     cutoff = np.quantile(sims, sim_cutoff_quantile)
