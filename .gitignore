@@ -12,3 +12,14 @@ docs/training-*
 uv.lock
 docs/notebooks/.ipynb_checkpoints/
 docs/notebooks/Testing.ipynb
+docs/notebooks/opusmt*
+docs/notebooks/quickmt*
+docs/notebooks/m2m*
+docs/notebooks/nllb*
+docs/notebooks/mt*
+docs/notebooks/lt*
+docs/notebooks/flores*
+docs/blogs/mt*
+docs/blogs/lt*
+docs/blogs/flores*
+
