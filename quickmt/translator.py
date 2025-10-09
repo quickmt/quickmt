@@ -29,42 +29,47 @@ class TranslatorABC(ABC):
             src (List[str]): Input list of strings to split by sentences
 
         Returns:
-            List[List[int, str]]: List of tuples, first element is the input index, second element is the sentence
+            List[int], List[int], List[str]: List of input ids, list of paragraph ids and sentences
         """
-        ret = []
+        input_ids = []
+        paragraph_ids = []
+        sentences = []
         for idx, i in enumerate(src):
             for paragraph, j in enumerate(i.splitlines(keepends=True)):
                 sents = text_to_sentences(j).splitlines()
                 for sent in sents:
                     stripped_sent = sent.strip()
                     if len(stripped_sent) > 0:
-                        # If the next segment is just a few chars, just tack it on
-                        if (len(ret) > 0 and idx == ret[-1][0]) and (
-                            len(stripped_sent) < 5
-                        ):
-                            ret[-1][2] += stripped_sent
-                        else:
-                            ret.append([idx, paragraph, stripped_sent])
-        return ret
+                        input_ids.append(idx)
+                        paragraph_ids.append(paragraph)
+                        sentences.append(stripped_sent)
+
+        return input_ids, paragraph_ids, sentences
 
     @staticmethod
     @validate_call
     def _sentence_join(
-        src: List[Tuple[int, int, str]],
+        input_ids: List[int],
+        paragraph_ids: List[int],
+        sentences: List[str],
         paragraph_join_str: str = "\n",
         sent_join_str: str = " ",
     ):
-        """Join sentences together
+        """Sentence joiner
 
         Args:
-            src (List[int, int,  str]): Input list of indices and strings to join back up
+            input_ids (List[int]): List of input IDs
+            paragraph_ids (List[int]): List of paragraph IDs
+            sentences (List[str]): List of sentences to join up by input and paragraph ids
+            paragraph_join_str (str, optional): str to use to join paragraphs. Defaults to "\n".
+            sent_join_str (str, optional): str to join up sentences. Defaults to " ".
 
         Returns:
-            List[str]: List of strings, joined by join key
+            List[str]: Joined up sentences
         """
-        ret = list(["" for _ in range(1 + max([i[0] for i in src]))])
+        ret = [""] * (max(input_ids) + 1)
         last_paragraph = 0
-        for idx, paragraph, text in src:
+        for idx, paragraph, text in zip(input_ids, paragraph_ids, sentences):
             if len(ret[idx]) > 0:
                 if paragraph == last_paragraph:
                     ret[idx] += sent_join_str + text
@@ -82,8 +87,7 @@ class TranslatorABC(ABC):
         sentences: List[str],
         src_lang: Optional[str] = None,
         tgt_lang: Optional[str] = None,
-    ):
-        pass
+    ): ...
 
     @abstractmethod
     def detokenize(
@@ -91,8 +95,7 @@ class TranslatorABC(ABC):
         sentences: List[List[str]],
         src_lang: Optional[str] = None,
         tgt_lang: Optional[str] = None,
-    ):
-        pass
+    ): ...
 
     @abstractmethod
     def translate_batch(
@@ -100,8 +103,7 @@ class TranslatorABC(ABC):
         sentences: List[List[str]],
         src_lang: Optional[str] = None,
         tgt_lang: Optional[str] = None,
-    ):
-        pass
+    ): ...
 
     @validate_call
     def __call__(
@@ -135,7 +137,7 @@ class TranslatorABC(ABC):
         else:
             return_string = False
 
-        sentences = self._sentence_split(src)
+        indices, paragraphs, sentences = self._sentence_split(src)
 
         if verbose:
             print(f"Split sentences: {sentences}")
@@ -168,17 +170,7 @@ class TranslatorABC(ABC):
             output_tokens, src_lang=src_lang, tgt_lang=tgt_lang
         )
 
-        indices = [i[0] for i in sentences]
-        paragraphs = [i[1] for i in sentences]
-
-        ret = self._sentence_join(
-            (
-                (idx, paragraph, translation)
-                for idx, paragraph, translation in zip(
-                    indices, paragraphs, translated_sents
-                )
-            )
-        )
+        ret = self._sentence_join(indices, paragraphs, translated_sents)
 
         if return_string:
             return ret[0]
@@ -207,6 +199,54 @@ class TranslatorABC(ABC):
         with open(output_file, "wt") as myfile:
             myfile.write("".join([i + "\n" for i in mt]))
 
+    @validate_call
+    def translate_stream(
+        self,
+        src: Union[str, List[str]],
+        max_batch_size: int = 32,
+        max_decoding_length: int = 512,
+        beam_size: int = 5,
+        patience: int = 1,
+        src_lang: Union[None, str] = None,
+        tgt_lang: Union[None, str] = None,
+        **kwargs,
+    ):
+        """Translate a list of strings with quickmt model
+
+        Args:
+            src (List[str]): Input list of strings to translate
+            max_batch_size (int, optional): Maximum batch size, to constrain RAM utilization. Defaults to 32.
+            beam_size (int, optional): CTranslate2 Beam size. Defaults to 5.
+            patience (int, optional): CTranslate2 Patience. Defaults to 1.
+            max_decoding_length (int, optional): Maximum length of translation
+            **args: Other CTranslate2 translate_batch args, see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html#ctranslate2.Translator.translate_batch
+        """
+        if isinstance(src, str):
+            src = [src]
+
+        indices, paragraphs, sentences = self._sentence_split(src)
+
+        input_text = self.tokenize(sentences, src_lang=src_lang, tgt_lang=tgt_lang)
+
+        translations_iterator = self.translator.translate_iterable(
+            input_text,
+            beam_size=beam_size,
+            patience=patience,
+            max_decoding_length=max_decoding_length,
+            max_batch_size=max_batch_size,
+            **kwargs,
+        )
+
+        for idx, para, sent, output in zip(
+            indices, paragraphs, sentences, translations_iterator
+        ):
+            yield {
+                "input_idx": idx,
+                "sentence_idx": para,
+                "input_text": sent,
+                "translation": self.detokenize([output.hypotheses[0]])[0],
+            }
+
 
 class Translator(TranslatorABC):
     def __init__(self, model_path: DirectoryPath, **kwargs):
@@ -233,11 +273,17 @@ class Translator(TranslatorABC):
                 str(self.model_path / "tgt.spm.model")
             )
 
-    def tokenize(self, sentences: List[str], **kwargs):
-        return self.source_tokenizer.encode([i[2] for i in sentences], out_type=str)
+    def tokenize(self, sentences: List[str], source: bool = True, **kwargs):
+        if source:
+            return self.source_tokenizer.encode(sentences, out_type=str)
+        else:
+            return self.target_tokenizer.encode(sentences, out_type=str)
 
-    def detokenize(self, sentences: List[List[str]], **kwargs):
-        return [self.target_tokenizer.decode(i).replace("▁", " ") for i in sentences]
+    def detokenize(self, sentences: List[List[str]], target: bool = True, **kwargs):
+        if target:
+            return self.target_tokenizer.decode(sentences)
+        else:
+            return self.source_tokenizer.decode(sentences)
 
     def translate_batch(
         self,
@@ -302,7 +348,7 @@ class OpusmtTranslator(TranslatorABC):
 
     def tokenize(self, sentences: List[str], **kwargs):
         return [
-            self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i[2]))
+            self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i))
             for i in sentences
         ]
 
@@ -349,7 +395,7 @@ class M2m100Translator(TranslatorABC):
     def tokenize(self, sentences: List[str], src_lang: str, **kwargs):
         self.tokenizer.src_lang = src_lang
         return [
-            self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i[2]))
+            self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i))
             for i in sentences
         ]
 
@@ -401,7 +447,7 @@ class NllbTranslator(TranslatorABC):
     def tokenize(self, sentences: List[str], src_lang: str, **kwargs):
         self.tokenizer.src_lang = src_lang
         return [
-            self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i[2]))
+            self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i))
             for i in sentences
         ]
 

@@ -22,4 +22,4 @@ docs/notebooks/flores*
 docs/blogs/mt*
 docs/blogs/lt*
 docs/blogs/flores*
-
+tests/__pycache__
