@@ -6,6 +6,7 @@ import nltk
 from fire import Fire
 from nltk.corpus import words
 from sacremoses import MosesDetokenizer
+from itertools import islice
 
 try:
     word_list = words.words()
