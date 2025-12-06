@@ -26,7 +26,7 @@ The `quickmt` project was created to provide alternative translation models for 
 
 ```bash
 git clone https://github.com/quickmt/quickmt.git
-pip install ./quickmt/
+pip install -e ./quickmt/
 ```
 
 ## Download model
