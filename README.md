@@ -48,7 +48,7 @@ from quickmt import Translator
 # Auto-detects GPU, set to "cpu" to force CPU inference
 t = Translator("./quickmt-zh-en/", device="auto")
 
-# CTranslate2 quantize on the fly to int8 to reduce memory usage and increase speed a bit
+# CTranslate2 can quantize on the fly to int8, bf16, fp16 etc. to reduce memory usage and increase speed a bit
 # Other CTranslate2 args are supported, see this page for options: https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html#ctranslate2.Translator.__init__
 t = Translator("./quickmt-zh-en/", device="cpu", compute_type="int8")
 
