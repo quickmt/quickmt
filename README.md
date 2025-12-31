@@ -10,7 +10,7 @@ Ten out of the top twenty most downloaded machine translation (MT) models on Hug
 
 ![Top MT Models on Huggingface](docs/blogs/img/top-hf-translation-models.png)
 
-The `quickmt` project was created to provide alternative translation models for high-resource languages that are faster *and* more accurate than the `opus-mt` series of models. I'm not aiming for world-class accuracy - if you have enough compute (or money to use a hosted service) you will be better off using a high-quality general-purpose LLM like [`meta-llama/Llama-3.3-70B-Instruct`](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct) or an LLM fine-tune for MT like [`Unbabel/Tower-Plus-72B`](https://huggingface.co/Unbabel/Tower-Plus-72B). I am aiming for a *reasonably* high-quality and *relatively* fast alternative to the very popular `opus-mt` models. 
+The `quickmt` project was created to provide alternative translation models for high-resource languages that are faster *and* more accurate than the `opus-mt` series of models. I'm not aiming for world-class accuracy - if you have enough compute (or money to use a hosted service) you will be better off using a high-quality general-purpose LLM like [`meta-llama/Llama-3.3-70B-Instruct`](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct) or an LLM fine-tuned for MT like [`Unbabel/Tower-Plus-72B`](https://huggingface.co/Unbabel/Tower-Plus-72B). I am aiming for a *reasonably* high-quality and *relatively* fast alternative to the very popular `opus-mt` models. 
 
 `quickmt` models are 3x faster than `opus-mt` models:
 
@@ -26,7 +26,7 @@ The `quickmt` project was created to provide alternative translation models for 
 
 ```bash
 git clone https://github.com/quickmt/quickmt.git
-pip install ./quickmt/
+pip install -e ./quickmt/
 ```
 
 ## Download model
@@ -47,6 +47,10 @@ from quickmt import Translator
 
 # Auto-detects GPU, set to "cpu" to force CPU inference
 t = Translator("./quickmt-zh-en/", device="auto")
+
+# CTranslate2 can quantize on the fly to int8, bf16, fp16 etc. to reduce memory usage and increase speed a bit
+# Other CTranslate2 args are supported, see this page for options: https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html#ctranslate2.Translator.__init__
+t = Translator("./quickmt-zh-en/", device="cpu", compute_type="int8")
 
 # Translate - set beam size to 5 for higher quality (but slower speed)
 t(["他补充道：“我们现在有 4 个月大没有糖尿病的老鼠，但它们曾经得过该病。”"], beam_size=1)
