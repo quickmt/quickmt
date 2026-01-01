@@ -40,8 +40,12 @@ class TranslatorABC(ABC):
                 for sent in sents:
                     stripped_sent = sent.strip()
                     if len(stripped_sent) > 0:
-                        if len(stripped_sent) < 5 and input_ids[-1] == idx and paragraph == paragraph_ids[-1]:
-                            sentences[-1] += " "+stripped_sent
+                        if (
+                            len(stripped_sent) < 5
+                            and len(paragraph_ids) > 0 and paragraph == paragraph_ids[-1]
+                            and len(input_ids) > 0 and input_ids[-1] == idx
+                        ):
+                            sentences[-1] += " " + stripped_sent
                         else:
                             input_ids.append(idx)
                             paragraph_ids.append(paragraph)
