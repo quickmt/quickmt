@@ -1,63 +1,98 @@
-# `quickmt` Neural Machine Translation Library 
+# `quickmt` Neural Machine Translation Inference Library
+
 
 <a href="https://huggingface.co/spaces/quickmt/QuickMT-Demo"><img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-lg-dark.svg" alt="Open in Spaces"></a>
 
-A reasonably quick and reasonably accurate neural machine translation toolkit. Models are trained using [`eole`](https://github.com/eole-nlp/eole) and inference using [`ctranslate2`](https://github.com/OpenNMT/CTranslate2) with [`sentencepiece`](https://github.com/google/sentencepiece) for tokenization.
 
-## Why `quickmt`?
+A reasonably quick and reasonably accurate neural machine translation (NMT)system. Models are trained using [eole](github.com/eole-nlp/eole) and inference using [ctranslate2](github.com/OpenNMT/CTranslate2) with [sentencepiece](github.com/google/sentencepiece) for tokenization.
 
-Ten out of the top twenty most downloaded machine translation (MT) models on Huggingface are `Helsinki-NLP/opus-mt-xx-xx` models. The French to English MT model was downloaded 820,000+ times in the past month. It is common to download pre-trained models from Huggingface and then fine-tune them to be better for specific tasks, but surely the majority of these downloads are people intending to *use these models as-is* rather than fine-tune them. 
+## Why?
 
-![Top MT Models on Huggingface](docs/blogs/img/top-hf-translation-models.png)
+Ten out of the top twenty most downloaded machine translation (MT) models on Huggingface are Helsinki-NLP/opus-mt-xx-xx models. The French to English MT model was downloaded 820,000+ times in the past month. It is common to download pre-trained models from Huggingface and then fine-tune them to be better for specific tasks, but surely the majority of these downloads are people intending to use these models as-is rather than fine-tune them.
 
-The `quickmt` project was created to provide alternative translation models for high-resource languages that are faster *and* more accurate than the `opus-mt` series of models. I'm not aiming for world-class accuracy - if you have enough compute (or money to use a hosted service) you will be better off using a high-quality general-purpose LLM like [`meta-llama/Llama-3.3-70B-Instruct`](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct) or an LLM fine-tuned for MT like [`Unbabel/Tower-Plus-72B`](https://huggingface.co/Unbabel/Tower-Plus-72B). I am aiming for a *reasonably* high-quality and *relatively* fast alternative to the very popular `opus-mt` models. 
+## Installation
 
-`quickmt` models are 3x faster than `opus-mt` models:
-
-![opus-mt vs. quickmt speed comparison](docs/blogs/img/quickmt-opusmt-speed.png)
-
-*And* higher quality:
-
-![opus-mt vs. quickmt quality comparison](docs/blogs/img/quickmt-vs-opusmt-to-english.png)
-
-![opus-mt vs. quickmt quality comparison](docs/blogs/img/quickmt-vs-opusmt-from-english.png)
-
-## Install `quickmt`
+We are not on pypi yet, but will be soon! In the meantime:
 
 ```bash
+# Please use conda or a venv
 git clone https://github.com/quickmt/quickmt.git
-pip install -e ./quickmt/
+pip install ./quickmt
 ```
 
-## Download model
+If you have trouble getting `quickmt` (`ctranslate2`) to detect your nvidia GPU, see the [CTranslate2 installation guide](https://opennmt.net/CTranslate2/installation.html). We suggest using conda and installing `cuda==12.8.0` into your conda environment before installing `quickmt`. Alternatively, you can take a look at (or even use!) our Dockerfile if you're still having trouble getting it working. 
+
+
+## Web Application and REST Server
+
+`quickmt` has a high-performance REST server and modern web interface for fast, accurate and private neural machine translation.
+
+- **Language Detection**: Uses FastText if source language is not specified.
+- **Automatic Model Downloading**: Automatically downloads models from Huggingface on first use.
+- **Dynamic Batching**: Multiple concurrent HTTP requests are pooled together to maximize GPU utilization.
+- **Multi-Model Support**: Requests are routed to specific models based on `src_lang` and `tgt_lang`.
+- **LRU Cache**: Automatically loads and unloads models based on usage to manage memory.
+
+
+To launch the web application and REST server:
 
 ```bash
-# List available models
-quickmt-list
-
-quickmt-model-download quickmt/quickmt-zh-en ./quickmt-zh-en
+quickmt-gui
 ```
 
-## Use model
+The server will be available at http://localhost:8000 by default as port 8000 is the default port, and the API server is available at http://localhost:8000/docs. The following environment variables can be used to configure the server:
 
-Inference with `quickmt`:
+| Name | Default | Description |
+| ---- | ------- | ----------- |
+| `MAX_LOADED_MODELS` | 5 | Maximum number of models to keep loaded in memory (LRU eviction) |
+| `MAX_BATCH_SIZE` | 32 | Maximum batch size for translation |
+| `DEVICE` | 'auto' | Device to use for inference ('auto', 'cpu', or 'cuda') |
+| `COMPUTE_TYPE` | 'default' | Compute type for translation ('auto', 'int8', 'float16', etc.) |
+| `PORT` | 8000 | Port to use for the REST server |
+
+See the "settings.py" file for all configuration options.
+
+
+
+### API Usage
+
+Basic API syntax: 
+
+```bash
+curl -X POST http://localhost:8000/api/translate \
+     -H "Content-Type: application/json" \
+     -d '{"src":"Hello world","src_lang":null,"tgt_lang":"fr","beam_size":2,"patience":1,"length_penalty":1,"coverage_penalty":0,"repetition_penalty":1}'
+```
+
+Returns:
+
+```json
+{
+  "translation": "Bonjour tout le monde !",
+  "src_lang": "en",
+  "src_lang_score": 0.16532786190509796,
+  "tgt_lang": "fr",
+  "processing_time": 0.0006661415100097656,
+  "model_used": "quickmt/quickmt-en-fr"
+}
+```
+
+
+## Python Interface
+
 
 ```python
 from quickmt import Translator
+from huggingface_hub import snapshot_download
 
-# Auto-detects GPU, set to "cpu" to force CPU inference
-t = Translator("./quickmt-zh-en/", device="auto")
+# Download Model (if not downloaded already) and return path to local model
+model_id = "quickmt/quickmt-fr-en"
 
-# CTranslate2 can quantize on the fly to int8, bf16, fp16 etc. to reduce memory usage and increase speed a bit
-# Other CTranslate2 args are supported, see this page for options: https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html#ctranslate2.Translator.__init__
-t = Translator("./quickmt-zh-en/", device="cpu", compute_type="int8")
+# Device is either 'auto', 'cpu' or 'cuda'
+t = Translator(
+    snapshot_download(model_id), device="cpu"
+)
 
 # Translate - set beam size to 5 for higher quality (but slower speed)
-t(["他补充道：“我们现在有 4 个月大没有糖尿病的老鼠，但它们曾经得过该病。”"], beam_size=1)
-
-# Get alternative translations by sampling
-# You can pass any cTranslate2 `translate_batch` arguments
-t(["他补充道：“我们现在有 4 个月大没有糖尿病的老鼠，但它们曾经得过该病。”"], sampling_temperature=1.2, beam_size=1, sampling_topk=50, sampling_topp=0.9)
+t(["C'est la vie"], beam_size=1)
 ```
-
-The model is in `ctranslate2` format, and the tokenizers are `sentencepiece`, so you can use the model files directly if you want. It would be fairly easy to get them to work with e.g. [LibreTranslate](https://libretranslate.com/) which also uses `ctranslate2` and `sentencepiece`.

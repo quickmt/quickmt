@@ -1,36 +1,32 @@
-[project]
-name = "quickmt"
-version = "0.1.0"
-description = "Reasonably quick neural machine translation powered by CTranslate2"
-readme = "README.md"
-requires-python = ">=3.10"
-dependencies = [
-    "blingfire>=0.1.8",
-    "brand-yml>=0.1.1",
-    "ctranslate2>=4.6.0",
-    "datasets>=3.5.0",
-    "faicons>=0.2.2",
-    "fire>=0.7.0",
-    "huggingface-hub>=0.30.2",
-    "libsass>=0.23.0",
-    "pydantic>2",
-    "sacrebleu>=2.5.1",
-    "sentencepiece>=0.2.0",
-    "shiny>=1.4.0",
-]
+[build-system]
+requires = ["hatchling", "hatch-requirements-txt"]
+build-backend = "hatchling.build"
 
 [project.urls]
 "Homepage" = "https://github.com/quickmt/quickmt"
 "Bug Tracker" = "https://github.com/quickmt/quickmt/issues"
 
-[project.scripts]
-quickmt-clean="quickmt.scripts.clean:main"
-quickmt-static-filter="quickmt.scripts.static_filter:main"
-quickmt-eval="quickmt.scripts.eval:main"
-quickmt-list="quickmt.hub:list"
-quickmt-model-download="quickmt.hub:download"
-quickmt-model-upload="quickmt.hub:upload"
-quickmt-corpus-upload="quickmt.scripts.corpus_to_hf:main"
-quickmt-translate-file="quickmt.scripts.translate_file:main"
-quickmt-app="quickmt.scripts.quickmt_app:main"
+[project]
+name = "quickmt"
+version = "0.1.0"
+description = "A reasonably quick and reasonably accurate neural machine translation (NMT) system"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "QuickMT Team"},
+]
+dynamic = ["dependencies", "optional-dependencies"]
 
+[project.scripts]
+quickmt-serve = "quickmt.rest_server:start"
+quickmt-gui = "quickmt.rest_server:start_gui"
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
+
+[tool.hatch.metadata.hooks.requirements_txt.optional-dependencies]
+dev = ["requirements-dev.txt"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["quickmt"]

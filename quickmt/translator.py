@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from time import time
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 
 import ctranslate2
 import sentencepiece
@@ -18,7 +18,7 @@ class TranslatorABC(ABC):
             **kwargs: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
         """
         self.model_path = Path(model_path)
-        self.translator = ctranslate2.Translator(model_path, **kwargs)
+        self.translator = ctranslate2.Translator(str(model_path), **kwargs)
 
     @staticmethod
     @validate_call
@@ -42,8 +42,10 @@ class TranslatorABC(ABC):
                     if len(stripped_sent) > 0:
                         if (
                             len(stripped_sent) < 5
-                            and len(paragraph_ids) > 0 and paragraph == paragraph_ids[-1]
-                            and len(input_ids) > 0 and input_ids[-1] == idx
+                            and len(paragraph_ids) > 0
+                            and paragraph == paragraph_ids[-1]
+                            and len(input_ids) > 0
+                            and input_ids[-1] == idx
                         ):
                             sentences[-1] += " " + stripped_sent
                         else:
@@ -61,6 +63,7 @@ class TranslatorABC(ABC):
         sentences: List[str],
         paragraph_join_str: str = "\n",
         sent_join_str: str = " ",
+        length: Optional[int] = None,
     ):
         """Sentence joiner
 
@@ -74,7 +77,11 @@ class TranslatorABC(ABC):
         Returns:
             List[str]: Joined up sentences
         """
-        ret = [""] * (max(input_ids) + 1)
+        if not input_ids:
+            return [""] * (length or 0)
+
+        target_len = length if length is not None else (max(input_ids) + 1)
+        ret = [""] * target_len
         last_paragraph = 0
         for idx, paragraph, text in zip(input_ids, paragraph_ids, sentences):
             if len(ret[idx]) > 0:
@@ -112,14 +119,20 @@ class TranslatorABC(ABC):
         tgt_lang: Optional[str] = None,
     ): ...
 
+    @abstractmethod
+    def unload(self): ...
+
     @validate_call
     def __call__(
         self,
         src: Union[str, List[str]],
         max_batch_size: int = 32,
-        max_decoding_length: int = 512,
-        beam_size: int = 5,
+        max_decoding_length: int = 256,
+        beam_size: int = 2,
         patience: int = 1,
+        length_penalty: float = 1.0,
+        coverage_penalty: float = 0.0,
+        repetition_penalty: float = 1.0,
         verbose: bool = False,
         src_lang: Union[None, str] = None,
         tgt_lang: Union[None, str] = None,
@@ -146,6 +159,9 @@ class TranslatorABC(ABC):
 
         indices, paragraphs, sentences = self._sentence_split(src)
 
+        if not sentences:
+            return "" if return_string else [""] * len(src)
+
         if verbose:
             print(f"Split sentences: {sentences}")
 
@@ -158,6 +174,9 @@ class TranslatorABC(ABC):
             input_text,
             beam_size=beam_size,
             patience=patience,
+            length_penalty=length_penalty,
+            coverage_penalty=coverage_penalty,
+            repetition_penalty=repetition_penalty,
             max_decoding_length=max_decoding_length,
             max_batch_size=max_batch_size,
             src_lang=src_lang,
@@ -166,7 +185,7 @@ class TranslatorABC(ABC):
         )
         t2 = time()
         if verbose:
-            print(f"Translation time: {t2-t1}")
+            print(f"Translation time: {t2 - t1}")
 
         output_tokens = [i.hypotheses[0] for i in results]
 
@@ -177,7 +196,9 @@ class TranslatorABC(ABC):
             output_tokens, src_lang=src_lang, tgt_lang=tgt_lang
         )
 
-        ret = self._sentence_join(indices, paragraphs, translated_sents)
+        ret = self._sentence_join(
+            indices, paragraphs, translated_sents, length=len(src)
+        )
 
         if return_string:
             return ret[0]
@@ -211,7 +232,7 @@ class TranslatorABC(ABC):
         self,
         src: Union[str, List[str]],
         max_batch_size: int = 32,
-        max_decoding_length: int = 512,
+        max_decoding_length: int = 256,
         beam_size: int = 5,
         patience: int = 1,
         src_lang: Union[None, str] = None,
@@ -254,43 +275,74 @@ class TranslatorABC(ABC):
                 "translation": self.detokenize([output.hypotheses[0]])[0],
             }
 
+    def translate(self, *args, **kwargs):
+        return self.__call__(*args, **kwargs)
+
 
 class Translator(TranslatorABC):
-    def __init__(self, model_path: DirectoryPath, **kwargs):
+    def __init__(
+        self,
+        model_path: DirectoryPath,
+        inter_threads: int = 1,
+        intra_threads: int = 0,
+        **kwargs,
+    ):
         """Create quickmt translation object
 
         Args:
             model_path (DirectoryPath): Path to quickmt model folder
+            inter_threads (int): Number of simultaneous translations
+            intra_threads (int): Number of threads for each translation
             **kwargs: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
         """
-        super().__init__(model_path, **kwargs)
+        super().__init__(
+            model_path,
+            inter_threads=inter_threads,
+            intra_threads=intra_threads,
+            **kwargs,
+        )
         joint_tokenizer_path = self.model_path / "joint.spm.model"
         if joint_tokenizer_path.exists():
             self.source_tokenizer = sentencepiece.SentencePieceProcessor(
-                str(self.model_path / "joint.spm.model")
+                model_file=str(self.model_path / "joint.spm.model")
             )
             self.target_tokenizer = sentencepiece.SentencePieceProcessor(
-                str(self.model_path / "joint.spm.model")
+                model_file=str(self.model_path / "joint.spm.model")
             )
         else:
             self.source_tokenizer = sentencepiece.SentencePieceProcessor(
-                str(self.model_path / "src.spm.model")
+                model_file=str(self.model_path / "src.spm.model")
             )
             self.target_tokenizer = sentencepiece.SentencePieceProcessor(
-                str(self.model_path / "tgt.spm.model")
+                model_file=str(self.model_path / "tgt.spm.model")
             )
 
-    def tokenize(self, sentences: List[str], source: bool = True, **kwargs):
-        if source:
-            return self.source_tokenizer.encode(sentences, out_type=str)
-        else:
-            return self.target_tokenizer.encode(sentences, out_type=str)
+    def __del__(self):
+        self.unload()
 
-    def detokenize(self, sentences: List[List[str]], target: bool = True, **kwargs):
-        if target:
-            return self.target_tokenizer.decode(sentences)
-        else:
-            return self.source_tokenizer.decode(sentences)
+    def tokenize(
+        self,
+        sentences: List[str],
+        src_lang: Optional[str] = None,
+        tgt_lang: Optional[str] = None,
+    ):
+        # Default implementation ignores lang tags unless explicitly handled
+        return [
+            i + ["</s>"] for i in self.source_tokenizer.encode(sentences, out_type=str)
+        ]
+
+    def detokenize(
+        self,
+        sentences: List[List[str]],
+        src_lang: Optional[str] = None,
+        tgt_lang: Optional[str] = None,
+    ):
+        return self.target_tokenizer.decode(sentences)
+
+    def unload(self):
+        """Explicitly release CTranslate2 translator resources"""
+        if hasattr(self, "translator"):
+            del self.translator
 
     def translate_batch(
         self,
@@ -303,6 +355,7 @@ class Translator(TranslatorABC):
         replace_unknowns: bool = False,
         length_penalty: float = 1.0,
         coverage_penalty: float = 0.0,
+        repetition_penalty: float = 1.0,
         src_lang: str = None,
         tgt_lang: str = None,
         **kwargs,
@@ -335,154 +388,6 @@ class Translator(TranslatorABC):
             replace_unknowns=replace_unknowns,
             length_penalty=length_penalty,
             coverage_penalty=coverage_penalty,
-            **kwargs,
-        )
-
-
-class OpusmtTranslator(TranslatorABC):
-    def __init__(self, model_path: DirectoryPath, model_string: str, **kwargs):
-        """Create opus-mt translation object
-
-        Args:
-            model_path (DirectoryPath): Path to opus-mt exported ctranslate2 model folder
-            model_string (str): Huggingface model ID
-            **kwargs: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
-        """
-        from transformers import AutoTokenizer
-
-        super().__init__(model_path, **kwargs)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_string)
-
-    def tokenize(self, sentences: List[str], **kwargs):
-        return [
-            self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i))
-            for i in sentences
-        ]
-
-    def detokenize(self, sentences: List[List[str]], **kwargs):
-        return [
-            self.tokenizer.decode(self.tokenizer.convert_tokens_to_ids(i))
-            for i in sentences
-        ]
-
-    def translate_batch(
-        self,
-        input_text: List[List[str]],
-        beam_size: int = 5,
-        patience: int = 1,
-        max_decoding_length: int = 256,
-        max_batch_size: int = 32,
-        src_lang: str = None,
-        tgt_lang: str = None,
-        **kwargs,
-    ):
-        return self.translator.translate_batch(
-            input_text,
-            beam_size=beam_size,
-            patience=patience,
-            max_decoding_length=max_decoding_length,
-            max_batch_size=max_batch_size,
-            **kwargs,
-        )
-
-
-class M2m100Translator(TranslatorABC):
-    def __init__(self, model_path: DirectoryPath, **kwargs):
-        """Create M2M100 translation object
-
-        Args:
-            model_path (DirectoryPath): Path to opus-mt exported ctranslate2 model folder
-            **kwargs: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
-        """
-        from transformers import AutoTokenizer
-
-        super().__init__(model_path, **kwargs)
-        self.tokenizer = AutoTokenizer.from_pretrained("facebook/m2m100_1.2B")
-
-    def tokenize(self, sentences: List[str], src_lang: str, **kwargs):
-        self.tokenizer.src_lang = src_lang
-        return [
-            self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i))
-            for i in sentences
-        ]
-
-    def detokenize(self, sentences: List[List[str]], **kwargs):
-        return [
-            self.tokenizer.decode(
-                self.tokenizer.convert_tokens_to_ids(i), skip_special_tokens=True
-            )
-            for i in sentences
-        ]
-
-    def translate_batch(
-        self,
-        input_text: List[List[str]],
-        tgt_lang: str,
-        beam_size: int = 5,
-        patience: int = 1,
-        max_decoding_length: int = 256,
-        max_batch_size: int = 32,
-        src_lang: str = None,
-        **kwargs,
-    ):
-        return self.translator.translate_batch(
-            input_text,
-            beam_size=beam_size,
-            patience=patience,
-            max_decoding_length=max_decoding_length,
-            max_batch_size=max_batch_size,
-            target_prefix=[[f"__{tgt_lang}__"]] * len(input_text),
-            **kwargs,
-        )
-
-
-class NllbTranslator(TranslatorABC):
-    def __init__(self, model_path: DirectoryPath, **kwargs):
-        """Create NLLB translation object
-
-        Args:
-            model_path (DirectoryPath): Path to opus-mt exported ctranslate2 model folder
-            **kwargs: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
-        """
-        from transformers import AutoTokenizer
-
-        super().__init__(model_path, **kwargs)
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            "facebook/nllb-200-distilled-1.3B", src_lang="zho_Hans"
-        )
-
-    def tokenize(self, sentences: List[str], src_lang: str, **kwargs):
-        self.tokenizer.src_lang = src_lang
-        return [
-            self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(i))
-            for i in sentences
-        ]
-
-    def detokenize(self, sentences: List[List[str]], **kwargs):
-        return [
-            self.tokenizer.decode(
-                self.tokenizer.convert_tokens_to_ids(i), skip_special_tokens=True
-            )
-            for i in sentences
-        ]
-
-    def translate_batch(
-        self,
-        input_text: List[List[str]],
-        tgt_lang: str,
-        beam_size: int = 5,
-        patience: int = 1,
-        max_decoding_length: int = 512,
-        max_batch_size: int = 32,
-        src_lang: str = None,
-        **kwargs,
-    ):
-        return self.translator.translate_batch(
-            input_text,
-            beam_size=beam_size,
-            patience=patience,
-            max_decoding_length=max_decoding_length,
-            max_batch_size=max_batch_size,
-            target_prefix=[[tgt_lang]] * len(input_text),
+            repetition_penalty=repetition_penalty,
             **kwargs,
         )

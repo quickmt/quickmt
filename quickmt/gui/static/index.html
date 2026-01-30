@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickMT Machine Translation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="bg-blur"></div>
+
+    <div class="top-nav-links">
+        <a href="https://huggingface.co/quickmt" target="_blank" title="Hugging Face Models" class="glass-btn">
+            <span class="btn-icon">🤗</span>
+        </a>
+        <a href="https://github.com/quickmt/quickmt" target="_blank" title="GitHub Repository"
+            class="glass-btn icon-only">
+            <span class="btn-icon"><i class="fa-brands fa-github"></i></span>
+        </a>
+    </div>
+
+    <main class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar glass">
+            <div class="logo">
+                <div class="logo-icon">Q</div>
+                <span>QuickMT</span>
+            </div>
+            <ul class="nav-links">
+                <li class="active">
+                    <a href="#translate">
+                        <span class="nav-icon">🔁</span>
+                        <span class="nav-text">Translate</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#models">
+                        <span class="nav-icon">🧩</span>
+                        <span class="nav-text">Models</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#settings">
+                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-text">Settings</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div id="health-indicator" class="status-pill status-loading">
+                    <span class="dot"></span>
+                    <span class="status-text">Connecting...</span>
+                </div>
+                <div class="theme-toggle-container">
+                    <button id="theme-toggle" title="Toggle Light/Dark Mode">
+                        <span class="mode-icon">◑</span>
+                        <span class="mode-text">Dark Mode</span>
+                    </button>
+                </div>
+                <button id="sidebar-toggle" class="icon-btn collapse-btn" title="Toggle Sidebar">«</button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <section class="content">
+            <!-- Translate View -->
+            <div id="translate-view" class="view active">
+                <header class="view-header">
+                    <h1>QuickMT Neural MachineTranslation</h1>
+                </header>
+
+                <div class="translation-grid">
+                    <!-- Source Column -->
+                    <div class="card glass translation-card">
+                        <div class="card-header">
+                            <div class="lang-group">
+                                <span class="lang-label">From</span>
+                                <select id="src-lang-select" class="lang-select">
+                                    <option value="">Auto-detect</option>
+                                </select>
+                            </div>
+                            <div id="detected-badge" class="detected-badge"></div>
+                        </div>
+                        <div class="card-body">
+                            <textarea id="src-text" placeholder="Enter text to translate..." autofocus></textarea>
+                        </div>
+                        <div class="card-footer">
+                            <span id="char-count">0 characters</span>
+                        </div>
+                    </div>
+
+                    <!-- Target Column -->
+                    <div class="card glass translation-card target-card">
+                        <div class="card-header">
+                            <div class="lang-group">
+                                <span class="lang-label">To</span>
+                                <select id="tgt-lang-select" class="lang-select">
+                                    <option value="en">English</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <textarea id="tgt-text" readonly placeholder="Translation will appear here..."></textarea>
+                            <div id="translation-loader" class="loader-overlay hidden">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <span id="timing-info">Ready</span>
+                            <button id="copy-btn" class="action-btn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Models View -->
+            <div id="models-view" class="view">
+                <header class="view-header">
+                    <h1>Available Models</h1>
+                    <p>Browse models from the quickmt Hugging Face collection</p>
+                </header>
+                <div id="models-list" class="models-grid">
+                    <!-- Model cards will be injected here -->
+                </div>
+            </div>
+            <!-- Settings View -->
+            <div id="settings-view" class="view">
+                <header class="view-header">
+                    <h1>Inference Settings</h1>
+                    <p>Fine-tune the translation engine for your needs</p>
+                </header>
+
+                <div class="settings-container glass">
+                    <div class="settings-grid">
+                        <!-- Beam Size -->
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <label>Beam Size</label>
+                                <span class="setting-desc">Number of hypotheses to explore (1-10)</span>
+                            </div>
+                            <div class="setting-control">
+                                <input type="range" id="setting-beam-size" min="1" max="10" step="1" value="2">
+                                <span class="setting-val">2</span>
+                            </div>
+                        </div>
+
+                        <!-- Patience -->
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <label>Patience</label>
+                                <span class="setting-desc">Stopping criterion factor (1-10)</span>
+                            </div>
+                            <div class="setting-control">
+                                <input type="range" id="setting-patience" min="1" max="10" step="1" value="1">
+                                <span class="setting-val">1</span>
+                            </div>
+                        </div>
+
+                        <!-- Length Penalty -->
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <label>Length Penalty</label>
+                                <span class="setting-desc">Favour longer or shorter sentences (default 1.0)</span>
+                            </div>
+                            <div class="setting-control">
+                                <input type="number" id="setting-length-penalty" step="0.1" value="1.0">
+                            </div>
+                        </div>
+
+                        <!-- Coverage Penalty -->
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <label>Coverage Penalty</label>
+                                <span class="setting-desc">Ensure all source words are translated (default 0.0)</span>
+                            </div>
+                            <div class="setting-control">
+                                <input type="number" id="setting-coverage-penalty" step="0.1" value="0.0">
+                            </div>
+                        </div>
+
+                        <!-- Repetition Penalty -->
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <label>Repetition Penalty</label>
+                                <span class="setting-desc">Prevent repeating words (default 1.0)</span>
+                            </div>
+                            <div class="setting-control">
+                                <input type="number" id="setting-repetition-penalty" step="0.1" value="1.0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-actions">
+                        <button id="reset-settings" class="action-btn secondary">Reset to Defaults</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

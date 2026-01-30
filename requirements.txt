@@ -1,0 +1,14 @@
+blingfire
+cachetools
+fastapi
+uvicorn[standard]
+ctranslate2
+sentencepiece
+huggingface_hub
+fasttext-wheel
+orjson
+uvloop
+httptools
+pydantic
+pydantic-settings
+

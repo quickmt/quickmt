@@ -1,0 +1,5 @@
+pytest
+pytest-asyncio
+httpx
+locust
+sacrebleu
