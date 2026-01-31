@@ -94,16 +94,10 @@ Returns:
 
 ```python
 from quickmt import Translator
-from huggingface_hub import snapshot_download
-
-# Download Model (if not downloaded already) and return path to local model
-model_id = "quickmt/quickmt-fr-en"
 
 # Device is either 'auto', 'cpu' or 'cuda'
-# The eole-model folder is not needed for CTranslate2inference, so we ignore it to save space
-t = Translator(
-    snapshot_download(model_id, ignore_patterns="eole-model/*"), device="cpu"
-)
+# Will download model from Huggingface if not already in your cache
+t = Translator("quickmt/quickmt-fr-en", device="cpu")
 
 # Translate - set beam size to 5 for higher quality (but slower speed)
 t(["C'est la vie"], beam_size=1)
