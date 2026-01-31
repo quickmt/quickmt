@@ -7,6 +7,7 @@ import ctranslate2
 import sentencepiece
 from blingfire import text_to_sentences
 from pydantic import DirectoryPath, validate_call
+from huggingface_hub import snapshot_download
 
 
 class TranslatorABC(ABC):
@@ -282,7 +283,7 @@ class TranslatorABC(ABC):
 class Translator(TranslatorABC):
     def __init__(
         self,
-        model_path: DirectoryPath,
+        model_path: str | DirectoryPath,
         inter_threads: int = 1,
         intra_threads: int = 0,
         **kwargs,
@@ -290,13 +291,30 @@ class Translator(TranslatorABC):
         """Create quickmt translation object
 
         Args:
-            model_path (DirectoryPath): Path to quickmt model folder
+            model_path (str | DirectoryPath): Quickmt Model ID or path to quickmt model folder
             inter_threads (int): Number of simultaneous translations
             intra_threads (int): Number of threads for each translation
             **kwargs: CTranslate2 Translator arguments - see https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
         """
+        # snapshot_download returns the local path in the HF cache.
+        # Try local only first to speed up loading
+        if Path(model_path).exists():
+            model_folder = model_path
+        else:
+            try:
+                model_folder = snapshot_download(
+                    repo_id=model_path,
+                    ignore_patterns=["eole-model/*", "eole_model/*"],
+                    local_files_only=True,
+                )
+            except Exception:
+                model_folder = snapshot_download(
+                    repo_id=model_path,
+                    ignore_patterns=["eole-model/*", "eole_model/*"],
+                )
+
         super().__init__(
-            model_path,
+            model_folder,
             inter_threads=inter_threads,
             intra_threads=intra_threads,
             **kwargs,
