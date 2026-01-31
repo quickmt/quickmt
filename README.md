@@ -92,7 +92,6 @@ Returns:
 
 ## Python Interface
 
-
 ```python
 from quickmt import Translator
 from huggingface_hub import snapshot_download
@@ -101,8 +100,9 @@ from huggingface_hub import snapshot_download
 model_id = "quickmt/quickmt-fr-en"
 
 # Device is either 'auto', 'cpu' or 'cuda'
+# The eole-model folder is not needed for CTranslate2inference, so we ignore it to save space
 t = Translator(
-    snapshot_download(model_id), device="cpu"
+    snapshot_download(model_id, ignore_patterns="eole-model/*"), device="cpu"
 )
 
 # Translate - set beam size to 5 for higher quality (but slower speed)
