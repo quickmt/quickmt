@@ -30,7 +30,7 @@ Alternatively, you can use our Dockerfile if you're still having trouble getting
 
 ```bash
 docker build -t quickmt .
-docker run -p 7860:7860 -ti --rm qmt-app:latest
+docker run -p 7860:7860 -ti --rm quickmt:latest
 ```
 
 Then open your browser to http://localhost:7860.
