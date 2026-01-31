@@ -4,13 +4,15 @@
 <a href="https://huggingface.co/spaces/quickmt/quickmt-gui"><img src="https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-lg-dark.svg" alt="Open in Spaces"></a>
 
 
-A reasonably quick and reasonably accurate neural machine translation (NMT)system. Models are trained using [eole](github.com/eole-nlp/eole) and inference using [ctranslate2](github.com/OpenNMT/CTranslate2) with [sentencepiece](github.com/google/sentencepiece) for tokenization.
+A reasonably quick and reasonably accurate neural machine translation (NMT) system. Models are trained using [eole](github.com/eole-nlp/eole) and inference using [ctranslate2](github.com/OpenNMT/CTranslate2) with [sentencepiece](github.com/google/sentencepiece) for tokenization.
 
 ![QuickMT GUI](images/app.png)
 
 ## Why?
 
 Ten out of the top twenty most downloaded machine translation (MT) models on Huggingface are Helsinki-NLP/opus-mt-xx-xx models. The French to English MT model was downloaded 820,000+ times in the past month. It is common to download pre-trained models from Huggingface and then fine-tune them to be better for specific tasks, but surely the majority of these downloads are people intending to use these models as-is rather than fine-tune them.
+
+Our aim is to develop light-weight translation models that are faster and more accurate than the Opus-MT models, along with the bells and whistles to make these models useful (REST API, web application, sentence splitting, ...).
 
 ## Installation
 
