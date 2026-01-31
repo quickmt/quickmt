@@ -30,10 +30,17 @@ Alternatively, you can use our Dockerfile if you're still having trouble getting
 
 ```bash
 docker build -t quickmt .
+
+# Use CPU for translation
 docker run -p 7860:7860 -ti --rm quickmt:latest
+
+# Use Nvidia GPU for translation (ensure you have Nvidia driver and container toolkit installed)
+docker run --gpus all -e DEVICE=cuda -ti --rm -p 7860:7860 quickmt:latest 
 ```
 
 Then open your browser to http://localhost:7860.
+
+**NOTE:** It will take a little longer the first time you use a model as the system is fetching the model weights from Huggingface, but after the first download and the model is in your cache folder translations should be considerably faster.
 
 
 
