@@ -20,7 +20,17 @@ git clone https://github.com/quickmt/quickmt.git
 pip install ./quickmt
 ```
 
-If you have trouble getting `quickmt` (`ctranslate2`) to detect your nvidia GPU, see the [CTranslate2 installation guide](https://opennmt.net/CTranslate2/installation.html). We suggest using conda and installing `cuda==12.8.0` into your conda environment before installing `quickmt`. Alternatively, you can take a look at (or even use!) our Dockerfile if you're still having trouble getting it working. 
+If you have trouble getting `quickmt` (`ctranslate2`) to detect your nvidia GPU, see the [CTranslate2 installation guide](https://opennmt.net/CTranslate2/installation.html). We suggest using conda and installing `cuda==12.8.0` into your conda environment before installing `quickmt`. 
+
+Alternatively, you can use our Dockerfile if you're still having trouble getting it working:
+
+```bash
+docker build -t quickmt .
+docker run -p 7860:7860 -ti --rm qmt-app:latest
+```
+
+Then open your browser to http://localhost:7860.
+
 
 
 ## Web Application and REST Server
