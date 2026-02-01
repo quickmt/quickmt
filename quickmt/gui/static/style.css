@@ -11,6 +11,7 @@
     --sidebar-active-bg: rgba(255, 255, 255, 0.05);
     --input-bg: rgba(255, 255, 255, 0.05);
     --btn-hover-bg: rgba(255, 255, 255, 0.1);
+    color-scheme: dark;
 }
 
 body.light-mode {
@@ -23,6 +24,7 @@ body.light-mode {
     --sidebar-active-bg: rgba(99, 102, 241, 0.05);
     --input-bg: rgba(0, 0, 0, 0.02);
     --btn-hover-bg: rgba(99, 102, 241, 0.1);
+    color-scheme: light;
 }
 
 * {
@@ -338,6 +340,24 @@ textarea {
     border-radius: 0.5rem;
     outline: none;
     cursor: pointer;
+}
+
+.lang-select option {
+    background-color: var(--glass-bg);
+    color: var(--text-main);
+}
+
+/* Chrome/Safari specific fix for option visibility */
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+    .lang-select option {
+        background-color: #1e1b4b; /* Match app background dark */
+        color: #f8fafc;
+    }
+    
+    body.light-mode .lang-select option {
+        background-color: #ffffff;
+        color: #1e293b;
+    }
 }
 
 .detected-badge {
