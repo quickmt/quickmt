@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let debounceTimer;
     let languages = {};
+    let languageNames = {};
     let activeController = null;
 
     let settings = {
@@ -149,7 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch('/api/languages');
             if (res.ok) {
-                languages = await res.json();
+                const data = await res.json();
+                languages = data.pairs;
+                languageNames = data.names;
                 populateSelects();
                 updateHealth(true);
             }
@@ -170,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sources.forEach(lang => {
             const opt = document.createElement('option');
             opt.value = lang;
-            opt.textContent = lang.toUpperCase();
+            opt.textContent = languageNames[lang] || lang.toUpperCase();
             srcLangSelect.appendChild(opt);
         });
 
@@ -203,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
         availableTgts.forEach(lang => {
             const opt = document.createElement('option');
             opt.value = lang;
-            opt.textContent = lang.toUpperCase();
+            opt.textContent = languageNames[lang] || lang.toUpperCase();
             if (lang === currentTgt || (availableTgts.length === 1)) opt.selected = true;
             tgtLangSelect.appendChild(opt);
         });
@@ -252,7 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Get the detected language from the response
                     if (detectData.results && detectData.results.length > 0) {
                         srcLang = detectData.results[0].lang;
-                        detectedBadge.textContent = `Detected: ${srcLang.toUpperCase()}`;
+                        const srcName = languageNames[srcLang] || srcLang.toUpperCase();
+                        detectedBadge.textContent = `Detected: ${srcName}`;
                         detectedBadge.classList.add('visible');
                     }
                 }
@@ -332,9 +336,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.className = 'model-card';
                 card.innerHTML = `
                     <div class="model-lang-pair">
-                        <span>${m.src_lang.toUpperCase()}</span>
+                        <span>${m.src_name || m.src_lang.toUpperCase()}</span>
                         <span>→</span>
-                        <span>${m.tgt_lang.toUpperCase()}</span>
+                        <span>${m.tgt_name || m.tgt_lang.toUpperCase()}</span>
                     </div>
                     <div class="model-id">${m.model_id}</div>
                     ${m.loaded ? '<span class="loaded-badge">Currently Loaded</span>' : ''}

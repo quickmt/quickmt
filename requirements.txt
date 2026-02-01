@@ -1,5 +1,7 @@
 blingfire
 cachetools
+langcodes
+language_data
 fastapi
 uvicorn[standard]
 ctranslate2

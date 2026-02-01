@@ -15,6 +15,10 @@ from quickmt.langid import init_worker, predict_worker, ensure_model_exists
 from quickmt.manager import ModelManager
 from quickmt.settings import settings
 
+
+import langcodes
+
+
 logger = logging.getLogger("uvicorn.error")
 
 
@@ -308,14 +312,40 @@ async def identify_language_endpoint(request: DetectionRequest):
 async def get_models():
     if not model_manager:
         raise HTTPException(status_code=503, detail="Model manager not initialized")
-    return {"models": model_manager.list_available_models()}
+    models = model_manager.list_available_models()
+
+    if langcodes:
+        for m in models:
+            try:
+                m["src_name"] = langcodes.Language.get(m["src_lang"]).display_name()
+                m["tgt_name"] = langcodes.Language.get(m["tgt_lang"]).display_name()
+            except Exception:
+                m["src_name"] = m["src_lang"].upper()
+                m["tgt_name"] = m["tgt_lang"].upper()
+
+    return {"models": models}
 
 
 @api_router.get("/languages")
 async def get_languages():
     if not model_manager:
         raise HTTPException(status_code=503, detail="Model manager not initialized")
-    return model_manager.get_language_pairs()
+    pairs = model_manager.get_language_pairs()
+
+    names = {}
+    if langcodes:
+        # Collect all unique codes
+        all_codes = set(pairs.keys())
+        for tgts in pairs.values():
+            all_codes.update(tgts)
+
+        for code in all_codes:
+            try:
+                names[code] = langcodes.Language.get(code).display_name()
+            except Exception:
+                names[code] = code.upper()
+
+    return {"pairs": pairs, "names": names}
 
 
 @api_router.get("/health")
