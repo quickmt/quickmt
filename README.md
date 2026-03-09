@@ -16,7 +16,7 @@ Our aim is to develop light-weight translation models that are faster *and more 
 
 ## Installation
 
-We are not on pypi yet, but will be soon! In the meantime:
+We are not on pypi yet. In the meantime:
 
 ```bash
 # Please use conda or a venv
@@ -68,7 +68,7 @@ The server will be available at http://localhost:8000 by default as port 8000 is
 | `MAX_LOADED_MODELS` | 5 | Maximum number of models to keep loaded in memory (LRU eviction) |
 | `MAX_BATCH_SIZE` | 32 | Maximum batch size for translation |
 | `DEVICE` | 'auto' | Device to use for inference ('auto', 'cpu', or 'cuda') |
-| `COMPUTE_TYPE` | 'default' | Compute type for translation ('auto', 'int8', 'float16', etc.) |
+| `COMPUTE_TYPE` | 'auto' | Compute type for translation ('auto', 'int8', 'float16', etc.) |
 | `PORT` | 8000 | Port to use for the REST server |
 
 See the "settings.py" file for all configuration options.
